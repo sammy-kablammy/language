@@ -6,13 +6,22 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct string {
     uint64_t length;
     char *buf;
 } string;
 
+typedef uint8_t bool;
+
 string read_entire_file(const char *filename);
+
+void print_string(string str) {
+    for (uint64_t i = 0; i < str.length; i++) {
+        printf("%c", str.buf[i]);
+    }
+}
 
 void panic(const char *fmt, ...) {
     va_list args;
@@ -24,6 +33,19 @@ void panic(const char *fmt, ...) {
 
     va_end(args);
     exit(67);
+}
+
+// zero-initializing, unfailable general purpose allocator allocator
+void *xalloc(size_t size) {
+    void *buf = calloc(size, 1);
+    if (buf == NULL) {
+        panic("allocator failed");
+    }
+    return buf;
+}
+
+void xfree(void *buf) {
+    free(buf);
 }
 
 #if defined(__linux__)
