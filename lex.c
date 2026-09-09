@@ -42,9 +42,6 @@ void token_array_append(token_array *arr, token tok) {
         arr->buf = new;
     }
 
-    // uint8_t *tip = (uint8_t *)arr->buf + (arr->length * sizeof(token));
-    // memcpy(tip, element, sizeof(token));
-
     arr->buf[arr->length + 1] = tok;
 
     arr->length += 1;

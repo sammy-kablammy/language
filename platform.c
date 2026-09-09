@@ -35,7 +35,7 @@ void panic(const char *fmt, ...) {
     exit(67);
 }
 
-// zero-initializing, unfailable general purpose allocator allocator
+// zero-initializing, unfailable general purpose allocator
 void *xalloc(size_t size) {
     void *buf = calloc(size, 1);
     if (buf == NULL) {
