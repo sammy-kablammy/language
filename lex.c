@@ -41,9 +41,7 @@ void token_array_append(token_array *arr, token tok) {
         xfree(arr->buf);
         arr->buf = new;
     }
-
-    arr->buf[arr->length + 1] = tok;
-
+    arr->buf[arr->length] = tok;
     arr->length += 1;
 }
 
