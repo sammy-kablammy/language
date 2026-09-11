@@ -48,14 +48,12 @@ token_array token_array_create() {
 void token_array_append(token_array *arr, token tok) {
     if (arr->length + 1 > arr->capacity) {
         arr->capacity = arr->capacity * 2 + 1;
-        void *new = xalloc(arr->capacity);
+        void *new = xalloc(arr->capacity * sizeof(token));
         memcpy(new, arr->buf, arr->length * sizeof(token));
         xfree(arr->buf);
         arr->buf = new;
     }
-
-    arr->buf[arr->length + 1] = tok;
-
+    arr->buf[arr->length] = tok;
     arr->length += 1;
 }
 
@@ -73,6 +71,7 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
     };
     while (*i < input.length && is_keyword_character(input.buf[*i])) {
         *i += 1;
+        identifier.length += 1;
     }
     return (token){
         .kind = TOKEN_IDENTIFIER,
