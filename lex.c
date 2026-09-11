@@ -8,6 +8,18 @@ typedef struct token {
         TOKEN_MINUS = '-',
         TOKEN_STAR = '*',
         TOKEN_SLASH = '/',
+		TOKEN_ZERO = '0',
+		TOKEN_ONE = '1',
+		TOKEN_TWO = '2',
+		TOKEN_THREE = '3',
+		TOKEN_FOUR = '4',
+		TOKEN_FIVE = '5',
+		TOKEN_SIX = '6',
+		TOKEN_SEVEN = '7',
+		TOKEN_EIGHT = '8',
+		TOKEN_NINE = '9',
+		TOKEN_L_PARENTHESIS = '(',
+		TOKEN_R_PARENTHESIS = ')',
         TOKEN_END_OF_LINE = '\n',
         // multicharacter or non-ascii tokens start above the ascii range:
         TOKEN_IDENTIFIER = 128,
@@ -81,6 +93,18 @@ token_array lex_entire_file(string input) {
             case TOKEN_MINUS: // fall through
             case TOKEN_STAR: // fall through
             case TOKEN_SLASH: // fall through
+			case TOKEN_ZERO:
+			case TOKEN_ONE:
+			case TOKEN_TWO:
+			case TOKEN_THREE:
+			case TOKEN_FOUR:
+			case TOKEN_FIVE:
+			case TOKEN_SIX:
+			case TOKEN_SEVEN:
+			case TOKEN_EIGHT:
+			case TOKEN_NINE:
+			case TOKEN_L_PARENTHESIS:
+			case TOKEN_R_PARENTHESIS:
             case TOKEN_END_OF_LINE:
                 tok.kind = ch;
                 break;
