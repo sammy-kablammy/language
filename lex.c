@@ -103,8 +103,8 @@ token_array lex_entire_file(string input) {
             case TOKEN_MINUS: // fall through
             case TOKEN_STAR: // fall through
             case TOKEN_SLASH: // fall through
-			case TOKEN_L_PARENTHESIS:
-			case TOKEN_R_PARENTHESIS:
+			case TOKEN_L_PARENTHESIS: // fall through
+			case TOKEN_R_PARENTHESIS: // fall through
             case TOKEN_END_OF_LINE:
                 i += 1;
                 tok.kind = ch;

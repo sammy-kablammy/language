@@ -29,9 +29,9 @@ struct infix_node {
     token operator;
 };
 
-expression_node* parse_expression(token_array tokens, parser_state* state);
-expression_node* parse_leaf(token t);
-int is_operator(token t);
+expression_node* parse_expression(token_array tokens, parser_state state);
+expression_node* parse_leaf(token t, parser_state state);
+bool is_operator(token t);
 // A program consists of statements
 // a statement can be either a declaration, an assignment or a procedure call
 //       x: int = 10
@@ -39,7 +39,8 @@ int is_operator(token t);
 //       print(x)
 syntax_tree_node* parse_entire_file(token_array tokens) {
 	syntax_tree_node* node = xalloc(sizeof(syntax_tree_node));
-	parser_state* state = xalloc(sizeof(parser_state));
+	parser_state state;
+	state.position_in_token_stream = 0;
 	parse_expression(tokens, state);
 	return node;
 }
@@ -47,15 +48,14 @@ syntax_tree_node* parse_entire_file(token_array tokens) {
 //       10 + 20			infix expression
 //       -5					number
 //       y					identifier
-expression_node* parse_expression(token_array tokens, parser_state* state) {
-	expression_node* leaf = parse_leaf(tokens.buf[state->position_in_token_stream]);
-	state->position_in_token_stream++;
+expression_node* parse_expression(token_array tokens, parser_state state) {
+	expression_node* leaf = parse_leaf(tokens.buf[state.position_in_token_stream], state);
 	// We have an operator to capture and a right side
-	if (is_operator(tokens.buf[state->position_in_token_stream])) {
+	if (is_operator(tokens.buf[state.position_in_token_stream])) {
 		// An operator means this is an in-fix expression
 		infix_node* infix = xalloc(sizeof(infix_node));
-		infix->operator = tokens.buf[state->position_in_token_stream];
-		state->position_in_token_stream++;
+		infix->operator = tokens.buf[state.position_in_token_stream];
+		state.position_in_token_stream++;
 		infix->left = leaf;
 		infix->right = parse_expression(tokens, state);
 		expression_node* expression = xalloc(sizeof(expression_node));
@@ -64,12 +64,10 @@ expression_node* parse_expression(token_array tokens, parser_state* state) {
 		return expression;
 	}
 	// There is not an operator, meaning this is a leaf node. Return the leaf as an expression
-	else {
-		return leaf;
-	}
+	return leaf;
 }
 
-expression_node* parse_leaf(token t) {
+expression_node* parse_leaf(token t, parser_state state) {
 	expression_node* leaf = xalloc(sizeof(expression_node));
 	if (t.kind == TOKEN_INTEGER) {
 		leaf->kind = INT;
@@ -82,18 +80,16 @@ expression_node* parse_leaf(token t) {
 	else {
 		printf("unrecognized syntax\n");
 	}
+	state.position_in_token_stream++;
 	return leaf;
 }
 
-int is_operator(token t) {
+bool is_operator(token t) {
 	switch(t.kind) {
-		case TOKEN_PLUS:
-			return 1;
-		case TOKEN_MINUS:
-			return 1;
-		case TOKEN_STAR:
-			return 1;
-		case TOKEN_SLASH:
+		case TOKEN_PLUS: // fall through
+		case TOKEN_MINUS: // fall through
+		case TOKEN_STAR: // fall through
+		case TOKEN_SLASH: // fall through
 			return 1;
 		default:
 			return 0;
