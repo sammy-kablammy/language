@@ -23,9 +23,11 @@ typedef struct token {
         TOKEN_END_OF_LINE = '\n',
         // multicharacter or non-ascii tokens start above the ascii range:
         TOKEN_IDENTIFIER = 128,
+        TOKEN_INTEGER,
     } kind;
     union {
         string identifier; // Only used for identifiers
+        uint64_t integer; // Only used for integers
     } value;
     // uint64_t position, // TODO this'll be handy for compiler errors
 } token;
@@ -63,6 +65,24 @@ bool is_keyword_character(char ch) {
         ch == '_';
 }
 
+bool is_integer_character(char c) {
+    return c >= '0' && c <= '9';
+}
+
+// 'i' is an outparam
+token lex_number(string input, uint64_t *i) {
+    uint64_t integer = 0;
+    while (*i < input.length && is_integer_character(input.buf[*i])) {
+        integer *= 10;
+        integer += input.buf[*i] - '0';
+        *i += 1;
+    }
+    return (token){
+        .kind = TOKEN_INTEGER,
+        .value.integer = integer,
+    };
+}
+
 // 'i' is an outparam
 token lex_identifier_or_keyword(string input, uint64_t *i) {
     string identifier = (string){
@@ -81,7 +101,8 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
 
 token_array lex_entire_file(string input) {
     token_array tokens = token_array_create();
-    for (uint64_t i = 0; i < input.length; i++) {
+    uint64_t i = 0;
+    while (i < input.length) {
         token tok = { 0 };
         char ch = input.buf[i];
         switch (ch) {
@@ -105,7 +126,20 @@ token_array lex_entire_file(string input) {
 			case TOKEN_L_PARENTHESIS:
 			case TOKEN_R_PARENTHESIS:
             case TOKEN_END_OF_LINE:
+                i += 1;
                 tok.kind = ch;
+                break;
+            case '0': // fall through
+            case '1': // fall through
+            case '2': // fall through
+            case '3': // fall through
+            case '4': // fall through
+            case '5': // fall through
+            case '6': // fall through
+            case '7': // fall through
+            case '8': // fall through
+            case '9': // fall through
+                tok = lex_number(input, &i);
                 break;
             default:
                 tok = lex_identifier_or_keyword(input, &i);
@@ -125,6 +159,9 @@ void debug_print_tokens(token_array tokens) {
                 printf("Token kind=identifier value='");
                 print_string(tok.value.identifier);
                 printf("'\n");
+                break;
+            case TOKEN_INTEGER:
+                printf("Token kind=integer value=%lu\n", tok.value.integer);
                 break;
             case TOKEN_END_OF_LINE:
                 printf("Token (end of line)\n");
