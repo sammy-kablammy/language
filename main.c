@@ -1,6 +1,7 @@
 // This project is a unity build / single compilation unit build.
 #include "platform.c"
 #include "lex.c"
+#include "parse.c"
 
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -14,7 +15,9 @@ int main(int argc, char **argv) {
     debug_print_tokens(tokens);
 
     // Parse one entire file into multiple syntax trees, one per top-level declaration
-    // syntax_tree_node *node = parse_entire_file(tokens);
+    syntax_tree_node *node = parse_entire_file(tokens);
+	if (node == NULL) return 0;
+	return 1;
 
 /*
     read input file
