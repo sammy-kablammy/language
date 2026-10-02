@@ -43,6 +43,13 @@ syntax_tree_node* parse_entire_file(token_array tokens) {
 	parse_expression(tokens, state);
 	return node;
 }
+
+expression_node* parse_file_debugger(token_array tokens) {
+	parser_state* state = xalloc(sizeof(parser_state));
+	expression_node* expression = parse_expression(tokens, state);
+	free(state);
+	return expression;
+}
 // expression examples:
 //       10 + 20			infix expression
 //       -5					number

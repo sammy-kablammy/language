@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 typedef struct token {
     enum {
         // For single-character tokens, just use their ascii value (that way
@@ -92,7 +94,10 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
 token_array lex_entire_file(string input) {
     token_array tokens = token_array_create();
     uint64_t i = 0;
+	bool continue_flag;
     while (i < input.length) {
+		continue_flag = false;
+		printf("i=%ld\n", i);
         token tok = { 0 };
         char ch = input.buf[i];
         switch (ch) {
@@ -121,10 +126,15 @@ token_array lex_entire_file(string input) {
             case '9': // fall through
                 tok = lex_number(input, &i);
                 break;
+			case ' ': // temporary edge case to allow for spaces to be consumed
+				i += 1;
+				continue_flag = true;
+				break;
             default:
                 tok = lex_identifier_or_keyword(input, &i);
                 break;
         }
+		if (continue_flag) continue;
         token_array_append(&tokens, tok);
     }
     return tokens;

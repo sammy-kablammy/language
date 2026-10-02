@@ -9,13 +9,28 @@ int main(int argc, char **argv) {
     }
     string contents = read_entire_file(argv[1]);
     (void)contents;
-
     token_array tokens = lex_entire_file(contents);
-
     debug_print_tokens(tokens);
 
     // Parse one entire file into multiple syntax trees, one per top-level declaration
     syntax_tree_node *node = parse_entire_file(tokens);
+	expression_node* head = parse_file_debugger(tokens);
+	expression_node* e = head;
+	while (e != NULL) {
+		if (e->kind == INT) {
+			printf("%d ", e->value.integer);
+			free(e);
+			break;
+		}
+		else if (e->kind == INFIX) {
+			printf("%d %c ", e->value.infix->left->value.integer, e->value.infix->operator.kind);
+			expression_node* temp = e;
+			e = e->value.infix->right;
+			free(temp);
+		}
+	}
+	printf("\n");
+	
 	if (node == NULL) return 0;
 	return 1;
 
