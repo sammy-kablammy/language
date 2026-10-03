@@ -13,25 +13,28 @@ int main(int argc, char **argv) {
     debug_print_tokens(tokens);
 
     // Parse one entire file into multiple syntax trees, one per top-level declaration
-    syntax_tree_node *node = parse_entire_file(tokens);
-	expression_node* head = parse_file_debugger(tokens);
-	expression_node* e = head;
-	while (e != NULL) {
-		if (e->kind == INT) {
-			printf("%d ", e->value.integer);
-			free(e);
-			break;
+    //syntax_tree_node *node = parse_entire_file(tokens);
+	expression_node** head = parse_file_debugger(tokens);
+	int i = 0;
+	while (head[i] != NULL) {
+		expression_node* e = head[i];
+		while (e != NULL) {
+			if (e->kind == INT) {
+				printf("%d ", e->value.integer);
+				free(e);
+				break;
+			}
+			else if (e->kind == INFIX) {
+				printf("%d %c ", e->value.infix->left->value.integer, e->value.infix->operator.kind);
+				expression_node* temp = e;
+				e = e->value.infix->right;
+				free(temp);
+			}
 		}
-		else if (e->kind == INFIX) {
-			printf("%d %c ", e->value.infix->left->value.integer, e->value.infix->operator.kind);
-			expression_node* temp = e;
-			e = e->value.infix->right;
-			free(temp);
-		}
+		printf("\n");
+		i++;
 	}
-	printf("\n");
 	
-	if (node == NULL) return 0;
 	return 1;
 
 /*
