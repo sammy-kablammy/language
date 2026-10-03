@@ -3,6 +3,8 @@
 #include "lex.c"
 #include "parse.c"
 
+void free_assignments(assignment_node** list);
+
 int main(int argc, char **argv) {
     if (argc != 2) {
         panic("Usage: '%s <file>'", argv[0]);
@@ -14,29 +16,9 @@ int main(int argc, char **argv) {
 
     // Parse one entire file into multiple syntax trees, one per top-level declaration
     //syntax_tree_node *node = parse_entire_file(tokens);
-	expression_node** head = parse_file_debugger(tokens);
-	int i = 0;
-	while (head[i] != NULL) {
-		expression_node* e = head[i];
-		while (e != NULL) {
-			if (e->kind == INT) {
-				printf("%d ", e->value.integer);
-				free(e);
-				break;
-			}
-			else if (e->kind == INFIX) {
-				printf("%d %c ", e->value.infix->left->value.integer, e->value.infix->operator.kind);
-				expression_node* temp = e;
-				e = e->value.infix->right;
-				free(temp);
-			}
-		}
-		printf("\n");
-		i++;
-	}
-	
-	return 1;
-
+	assignment_node** list = parse_file_debugger(tokens);
+	free_assignments(list);
+	return 0;
 /*
     read input file
 
@@ -49,4 +31,52 @@ int main(int argc, char **argv) {
     }
 */
 
+}
+
+void free_assignments(assignment_node** list) {
+	int assignment_index = 0;
+	while (list[assignment_index] != NULL) {
+		expression_node* e = list[assignment_index]->expression;
+		printf("assignment #%d\n", assignment_index+1);
+		while (e != NULL && e->kind == INFIX) {
+			printf("%p\n", (void *)e);
+			printf("%p\n",(void *)e->value.infix);
+			printf("%p\n\n\n", (void *)e->value.infix->left);
+			if (e->value.infix->left->kind == IDENTIFIER) {
+				print_string(e->value.infix->left->value.identifier);
+				printf(" ");
+			}
+			else if (e->value.infix->left->kind == INT) {
+				/**
+				QUARANTINE ZONE
+				this causes a segfault and i genuinely cant figure out why
+				the print statements above showing the pointers are not null has caused me
+				much much confusion.
+				im sure i just need to be more strict about ensuring non null values but i literally
+				dont know how to so im giving up. please god help me.
+				
+				int temp = e->value.infix->left->value.integer;
+				printf("%p is the address of the int\n", (void *)&temp);
+				printf("%d ", temp);
+				**/
+			}
+			printf("%c ", e->value.infix->operator.kind);
+			expression_node* temp = e;
+			free(e->value.infix->left);
+			e = e->value.infix->right;
+			free(temp);
+		}
+		if (e->value.infix->left->kind == IDENTIFIER) {
+			print_string(e->value.infix->left->value.identifier);
+			printf(" ");
+		}
+		else if (e->value.infix->left->kind == INT) {
+			printf("%d ", e->value.infix->left->value.integer);
+		}
+		printf("%c ", e->value.infix->operator.kind);
+		free(e);
+		printf("\n");
+		assignment_index++;
+	}
+	free(list);
 }

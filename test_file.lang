@@ -1,2 +1,2 @@
-3 * 5 - y + x / 0
-23 * 6 - 2
+testvar1 = 57 + 2
+testvar2 = y - x

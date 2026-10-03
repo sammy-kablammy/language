@@ -2,13 +2,18 @@ typedef struct parser_state {
     uint64_t position_in_token_stream;
 } parser_state;
 
-typedef struct statement_node statement_node;
+typedef struct assignment_node assignment_node;
 typedef struct expression_node expression_node;
 typedef struct infix_node infix_node;
 
 typedef struct syntax_tree_node {
 	int dummy;
 } syntax_tree_node;
+
+struct assignment_node {
+	string identifier;
+	expression_node* expression;
+};
 
 struct expression_node {
     enum {
@@ -30,6 +35,7 @@ struct infix_node {
     token operator;
 };
 
+assignment_node* parse_assignment(token_array tokens, parser_state* state);
 expression_node* parse_expression(token_array tokens, parser_state* state);
 expression_node* parse_leaf(token t, parser_state* state);
 void print_token(token t);
@@ -46,25 +52,33 @@ syntax_tree_node* parse_entire_file(token_array tokens) {
 	return node;
 }
 
-expression_node** parse_file_debugger(token_array tokens) {
+assignment_node** parse_file_debugger(token_array tokens) {
 	parser_state* state = xalloc(sizeof(parser_state));
-	expression_node** expressions = xalloc(sizeof(expression_node*) * 1000);
-	int expression_index = 0;
+	assignment_node** assignments = xalloc(sizeof(assignment_node*) * 1000);
+	int assignment_index = 0;
 	while (state->position_in_token_stream+1 < tokens.length) {
 		// store statement inside larger structure
-		expressions[expression_index] = parse_expression(tokens, state);
-		expression_node* e = expressions[expression_index];
+		assignments[assignment_index] = parse_assignment(tokens, state);
+		expression_node* e = assignments[assignment_index]->expression;
 		while (e != NULL) {
 			if (e->kind == INT) {
 				printf("%d ", e->value.integer);
 				break;
 			}
 			else if (e->kind == IDENTIFIER) {
-				printf("%s ", e->value.identifier.buf);
+				print_string(e->value.identifier);
+				printf(" ");
 				break;
 			}
 			else if (e->kind == INFIX) {
-				printf("%d %c ", e->value.infix->left->value.integer, e->value.infix->operator.kind);
+				if (e->value.infix->left->kind == IDENTIFIER) {
+				print_string(e->value.infix->left->value.identifier);
+				printf(" ");
+				}
+				else if (e->value.infix->left->kind == INT) {
+					printf("%d ", e->value.infix->left->value.integer);
+				}
+				printf("%c ", e->value.infix->operator.kind);
 				e = e->value.infix->right;
 			}
 		}
@@ -88,8 +102,6 @@ expression_node** parse_file_debugger(token_array tokens) {
 			}
 			else {
 				printf("unrecognized or no token found instead\n");
-				printf("pos in token stream: %lu\n", state->position_in_token_stream);
-				printf("token ascii value: %d\n", tokens.buf[state->position_in_token_stream].kind);
 			}
 			break;
 		}
@@ -97,16 +109,37 @@ expression_node** parse_file_debugger(token_array tokens) {
 			state->position_in_token_stream++;
 		}
 		// increment our position in larger structure of statement storage
-		expression_index++;
-		if (expression_index > 1000) {
+		assignment_index++;
+		if (assignment_index > 1000) {
 			printf("something bad happened\n");
 			break;
 		}
 	}
-	//expression_node* expression = parse_expression(tokens, state);
 	free(state);
-	return expressions;
+	return assignments;
 }
+
+assignment_node* parse_assignment(token_array tokens, parser_state* state) {
+	assignment_node* assignment = xalloc(sizeof(assignment_node));
+	// we are expecting an assignment, so there should be at least 2 more tokens,
+	// and the second token should be an assignment token
+	if (
+		state->position_in_token_stream + 1 < tokens.length + 1
+		&& tokens.buf[state->position_in_token_stream + 1].kind == TOKEN_ASSIGN
+	) {
+		assignment->identifier = tokens.buf[state->position_in_token_stream].value.identifier;
+		state->position_in_token_stream += 2;
+		assignment->expression = parse_expression(tokens, state);
+	}
+	else {
+		printf("syntax error: assignment expected\n'");
+		print_token(tokens.buf[state->position_in_token_stream + 1]);
+		printf("' received instead\n");
+		exit(1);
+	}
+	return assignment;
+}
+
 // expression examples:
 //       10 + 20			infix expression
 //       -5					number
@@ -133,7 +166,7 @@ expression_node* parse_expression(token_array tokens, parser_state* state) {
 }
 
 expression_node* parse_leaf(token t, parser_state* state) {
-	print_token(t);
+	//print_token(t);
 	expression_node* leaf = xalloc(sizeof(expression_node));
 	if (t.kind == TOKEN_INTEGER) {
 		leaf->kind = INT;
