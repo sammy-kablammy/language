@@ -152,7 +152,6 @@ expression_node* parse_expression(token_array tokens, parser_state* state, int p
 }
 
 expression_node* parse_leaf(token t, parser_state* state) {
-	//print_token(t);
 	expression_node* leaf = xalloc(sizeof(expression_node));
 	if (t.kind == TOKEN_INTEGER) {
 		leaf->kind = INT;
