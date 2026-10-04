@@ -47,11 +47,14 @@ enum {
 int operator_prec(token t) {
 	switch (t.kind) {
 		case TOKEN_PLUS:
+		case TOKEN_MINUS:
 			return ADD_PREC;
 		case TOKEN_STAR:
+		case TOKEN_SLASH:
 			return MULT_PREC;
 		default:
-			return -1;
+			print_token(t);
+			panic(" is not a recognizable operator");
 	}
 }
 
