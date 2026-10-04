@@ -6,10 +6,6 @@ typedef struct assignment_node assignment_node;
 typedef struct expression_node expression_node;
 typedef struct infix_node infix_node;
 
-typedef struct syntax_tree_node {
-	int dummy;
-} syntax_tree_node;
-
 struct assignment_node {
 	string identifier;
 	expression_node* expression;
