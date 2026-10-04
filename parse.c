@@ -55,6 +55,7 @@ int operator_prec(token t) {
 		default:
 			print_token(t);
 			panic(" is not a recognizable operator");
+			exit(1);
 	}
 }
 
@@ -133,8 +134,8 @@ assignment_node* parse_assignment(token_array tokens, parser_state* state) {
 	
 	assignment->identifier = tokens.buf[state->position_in_token_stream].value.identifier;
 	state->position_in_token_stream += 1;
-	if (token.kind != TOKEN_ASSIGN) {
-		print_token(token);
+	if (tokens.buf[state->position_in_token_stream].kind != TOKEN_ASSIGN) {
+		print_token(tokens.buf[state->position_in_token_stream]);
 		panic(" receieved, expected operator instead");
 	}
 	state->position_in_token_stream += 1;
