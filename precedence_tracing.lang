@@ -1,0 +1,40 @@
+enum precedence_levels {
+    PREC_MINIMUM,
+    PREC_ADD,
+    PREC_MULTIPLY,
+};
+
+
+
+
+a + b * c
+parse_expression(PREC_MINIMUM)
+    parse_leaf gives a
+    next token is operator so the expr is not over yet
+    prev precedence (PREC_MINIMUM) is less than current precedence (PREC_ADD)
+    create infix expression { a, +, parse_expression("b * c", PREC_ADD) }
+        parse_leaf gives b
+        next token is operator so expr is not over yet
+        prev precedence (PREC_ADD) is less than current prec (PREC_MULT)
+        create infix expression { b, *, parse_expression("c", PREC_MULT)}
+            parse_leaf gives c
+            end of line is not operator so no loop
+        return infix expression { b, *, c }
+    return infix expression { a + { b * c } }
+
+
+
+a * b + c
+parse_expression(PREC_MINIMUM)
+    parse_leaf gives a
+    next token is operator so expr is not over yet
+    prev prec (MIN) is less than next prec (MULT) so enter loop
+    create infix expression { a, *, parse_expression("b + c", PREC_MULT) }
+        parse_leaf gives b
+        next token is operator so expr is not over yet
+        prev prec (MULT) is not less than next prec (ADD) so don't enter loop at all
+        return leaf (b)
+    infix expression { a, *, b } 
+    next token (+) is operator so not over yet
+    prev prec (MIN) is less than next prec (ADD) so enter loop
+

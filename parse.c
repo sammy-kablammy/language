@@ -35,9 +35,16 @@ struct infix_node {
     token operator;
 };
 
+enum {
+	MIN_PREC,
+	ADD_PREC,
+	MULT_PREC
+};
+
 assignment_node* parse_assignment(token_array tokens, parser_state* state);
-expression_node* parse_expression(token_array tokens, parser_state* state);
+expression_node* parse_expression(token_array tokens, parser_state* state, int prev_precedence);
 expression_node* parse_leaf(token t, parser_state* state);
+int operator_prec(token t);
 void print_token(token t);
 bool is_operator(token t);
 
@@ -118,7 +125,7 @@ assignment_node* parse_assignment(token_array tokens, parser_state* state) {
 	) {
 		assignment->identifier = tokens.buf[state->position_in_token_stream].value.identifier;
 		state->position_in_token_stream += 2;
-		assignment->expression = parse_expression(tokens, state);
+		assignment->expression = parse_expression(tokens, state, MIN_PREC);
 	}
 	else {
 		printf("syntax error: assignment expected\n'");
@@ -129,25 +136,23 @@ assignment_node* parse_assignment(token_array tokens, parser_state* state) {
 	return assignment;
 }
 
-expression_node* parse_expression(token_array tokens, parser_state* state) {
-	expression_node* leaf = parse_leaf(tokens.buf[state->position_in_token_stream], state);
+expression_node* parse_expression(token_array tokens, parser_state* state, int prev_precedence) {
+	expression_node* left = parse_leaf(tokens.buf[state->position_in_token_stream], state);
 	// We have an operator to capture and a right side
-	if (is_operator(tokens.buf[state->position_in_token_stream])) {
+	int next_precedence = operator_prec(tokens.buf[state->position_in_token_stream]);
+	while (is_operator(tokens.buf[state->position_in_token_stream]) && prev_precedence < next_precedence) {
 		// An operator means this is an in-fix expression
 		infix_node* infix = xalloc(sizeof(infix_node));
 		infix->operator = tokens.buf[state->position_in_token_stream];
 		state->position_in_token_stream++;
-		infix->left = leaf;
-		infix->right = parse_expression(tokens, state);
+		infix->left = left;
+		infix->right = parse_expression(tokens, state, next_precedence);
 		expression_node* expression = xalloc(sizeof(expression_node));
 		expression->value.infix = infix;
 		expression->kind = INFIX;
-		return expression;
 	}
 	// There is not an operator, meaning this is a leaf node. Return the leaf as an expression
-	else {
-		return leaf;
-	}
+    return left;
 }
 
 expression_node* parse_leaf(token t, parser_state* state) {
@@ -168,6 +173,17 @@ expression_node* parse_leaf(token t, parser_state* state) {
 		printf("unrecognized syntax\n");
 	}
 	return leaf;
+}
+
+int operator_prec(token t) {
+	switch (t.kind) {
+		case TOKEN_PLUS:
+			return ADD_PREC;
+		case TOKEN_STAR:
+			return MULT_PREC;
+		default:
+			return MIN_PREC;
+	}
 }
 
 void print_token(token t) {
