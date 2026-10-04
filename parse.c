@@ -31,18 +31,29 @@ struct infix_node {
     token operator;
 };
 
-enum {
-	MIN_PREC,
-	ADD_PREC,
-	MULT_PREC
-};
-
 assignment_node* parse_assignment(token_array tokens, parser_state* state);
 expression_node* parse_expression(token_array tokens, parser_state* state, int prev_precedence);
 expression_node* parse_leaf(token t, parser_state* state);
 int operator_prec(token t);
 void print_token(token t);
 bool is_operator(token t);
+
+enum {
+	MIN_PREC,
+	ADD_PREC,
+	MULT_PREC
+};
+
+int operator_prec(token t) {
+	switch (t.kind) {
+		case TOKEN_PLUS:
+			return ADD_PREC;
+		case TOKEN_STAR:
+			return MULT_PREC;
+		default:
+			return -1;
+	}
+}
 
 assignment_node** parse_entire_file(token_array tokens) {
 	parser_state* state = xalloc(sizeof(parser_state));
@@ -168,17 +179,6 @@ expression_node* parse_leaf(token t, parser_state* state) {
 		printf("unrecognized syntax\n");
 	}
 	return leaf;
-}
-
-int operator_prec(token t) {
-	switch (t.kind) {
-		case TOKEN_PLUS:
-			return ADD_PREC;
-		case TOKEN_STAR:
-			return MULT_PREC;
-		default:
-			return -1;
-	}
 }
 
 void print_token(token t) {
