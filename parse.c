@@ -126,20 +126,16 @@ assignment_node* parse_assignment(token_array tokens, parser_state* state) {
 	assignment_node* assignment = xalloc(sizeof(assignment_node));
 	// we are expecting an assignment, so there should be at least 2 more tokens,
 	// and the second token should be an assignment token
-	if (
-		state->position_in_token_stream + 1 < tokens.length + 1
-		&& tokens.buf[state->position_in_token_stream + 1].kind == TOKEN_ASSIGN
-	) {
-		assignment->identifier = tokens.buf[state->position_in_token_stream].value.identifier;
-		state->position_in_token_stream += 2;
-		assignment->expression = parse_expression(tokens, state, MIN_PREC);
+	
+	
+	assignment->identifier = tokens.buf[state->position_in_token_stream].value.identifier;
+	state->position_in_token_stream += 1;
+	if (token.kind != TOKEN_ASSIGN) {
+		print_token(token);
+		panic(" receieved, expected operator instead");
 	}
-	else {
-		printf("syntax error: assignment expected\n'");
-		print_token(tokens.buf[state->position_in_token_stream + 1]);
-		printf("' received instead\n");
-		exit(1);
-	}
+	state->position_in_token_stream += 1;
+	assignment->expression = parse_expression(tokens, state, MIN_PREC);
 	return assignment;
 }
 
