@@ -1,3 +1,2 @@
-+
--*/
-hello
+testvar1 = 57 + 2
+testvar2 = y - x

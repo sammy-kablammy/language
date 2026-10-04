@@ -3,7 +3,6 @@ typedef struct token {
         // For single-character tokens, just use their ascii value (that way
         // they can be printed directly):
         TOKEN_ASSIGN = '=',
-        TOKEN_COLON = ':',
         TOKEN_PLUS = '+',
         TOKEN_MINUS = '-',
         TOKEN_STAR = '*',
@@ -50,6 +49,7 @@ void token_array_append(token_array *arr, token tok) {
 bool is_keyword_character(char ch) {
     return (ch >= 'a' && ch <= 'z') ||
         (ch >= 'A' && ch <= 'Z') ||
+		(ch >= '0' && ch <= '9') ||
         ch == '_';
 }
 
@@ -96,7 +96,6 @@ token_array lex_entire_file(string input) {
         switch (ch) {
             // All the single character tokens can be converted directly:
             case TOKEN_ASSIGN: // fall through
-            case TOKEN_COLON: // fall through
             case TOKEN_PLUS: // fall through
             case TOKEN_MINUS: // fall through
             case TOKEN_STAR: // fall through
@@ -117,6 +116,10 @@ token_array lex_entire_file(string input) {
             case '9': // fall through
                 tok = lex_number(input, &i);
                 break;
+			case ' ': // fall through
+			case '\t':
+				i += 1;
+				continue;
             default:
                 tok = lex_identifier_or_keyword(input, &i);
                 break;
