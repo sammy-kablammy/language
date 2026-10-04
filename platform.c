@@ -14,6 +14,8 @@ typedef struct string {
 } string;
 
 typedef uint8_t bool;
+const bool true = 1;
+const bool false = 0;
 
 string read_entire_file(const char *filename);
 

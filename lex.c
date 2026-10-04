@@ -1,17 +1,12 @@
-#include <stdbool.h>
-
 typedef struct token {
     enum {
         // For single-character tokens, just use their ascii value (that way
         // they can be printed directly):
         TOKEN_ASSIGN = '=',
-        TOKEN_COLON = ':',
         TOKEN_PLUS = '+',
         TOKEN_MINUS = '-',
         TOKEN_STAR = '*',
         TOKEN_SLASH = '/',
-		TOKEN_L_PARENTHESIS = '(',
-		TOKEN_R_PARENTHESIS = ')',
         TOKEN_END_OF_LINE = '\n',
         // multicharacter or non-ascii tokens start above the ascii range:
         TOKEN_IDENTIFIER = 128,
@@ -54,6 +49,7 @@ void token_array_append(token_array *arr, token tok) {
 bool is_keyword_character(char ch) {
     return (ch >= 'a' && ch <= 'z') ||
         (ch >= 'A' && ch <= 'Z') ||
+		(ch >= '0' && ch <= '9') ||
         ch == '_';
 }
 
@@ -94,22 +90,16 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
 token_array lex_entire_file(string input) {
     token_array tokens = token_array_create();
     uint64_t i = 0;
-	bool continue_flag;
     while (i < input.length) {
-		continue_flag = false;
-		printf("i=%ld\n", i);
         token tok = { 0 };
         char ch = input.buf[i];
         switch (ch) {
             // All the single character tokens can be converted directly:
             case TOKEN_ASSIGN: // fall through
-            case TOKEN_COLON: // fall through
             case TOKEN_PLUS: // fall through
             case TOKEN_MINUS: // fall through
             case TOKEN_STAR: // fall through
             case TOKEN_SLASH: // fall through
-			case TOKEN_L_PARENTHESIS:
-			case TOKEN_R_PARENTHESIS:
             case TOKEN_END_OF_LINE:
                 i += 1;
                 tok.kind = ch;
@@ -126,15 +116,14 @@ token_array lex_entire_file(string input) {
             case '9': // fall through
                 tok = lex_number(input, &i);
                 break;
-			case ' ': // temporary edge case to allow for spaces to be consumed
+			case ' ': // fall through
+			case '\t':
 				i += 1;
-				continue_flag = true;
-				break;
+				continue;
             default:
                 tok = lex_identifier_or_keyword(input, &i);
                 break;
         }
-		if (continue_flag) continue;
         token_array_append(&tokens, tok);
     }
     return tokens;

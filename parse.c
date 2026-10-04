@@ -39,20 +39,9 @@ assignment_node* parse_assignment(token_array tokens, parser_state* state);
 expression_node* parse_expression(token_array tokens, parser_state* state);
 expression_node* parse_leaf(token t, parser_state* state);
 void print_token(token t);
-int is_operator(token t);
-// A program consists of statements
-// a statement can be either a declaration, an assignment or a procedure call
-//       x: int = 10
-//       x = 100
-//       print(x)
-syntax_tree_node* parse_entire_file(token_array tokens) {
-	syntax_tree_node* node = xalloc(sizeof(syntax_tree_node));
-	parser_state* state = xalloc(sizeof(parser_state));
-	parse_expression(tokens, state);
-	return node;
-}
+bool is_operator(token t);
 
-assignment_node** parse_file_debugger(token_array tokens) {
+assignment_node** parse_entire_file(token_array tokens) {
 	parser_state* state = xalloc(sizeof(parser_state));
 	assignment_node** assignments = xalloc(sizeof(assignment_node*) * 1000);
 	int assignment_index = 0;
@@ -140,10 +129,6 @@ assignment_node* parse_assignment(token_array tokens, parser_state* state) {
 	return assignment;
 }
 
-// expression examples:
-//       10 + 20			infix expression
-//       -5					number
-//       y					identifier
 expression_node* parse_expression(token_array tokens, parser_state* state) {
 	expression_node* leaf = parse_leaf(tokens.buf[state->position_in_token_stream], state);
 	// We have an operator to capture and a right side
@@ -188,13 +173,10 @@ expression_node* parse_leaf(token t, parser_state* state) {
 void print_token(token t) {
 	switch (t.kind) {
 		case TOKEN_ASSIGN: // fall through
-		case TOKEN_COLON: // fall through
 		case TOKEN_PLUS: // fall through
         case TOKEN_MINUS: // fall through
         case TOKEN_STAR: // fall through 
         case TOKEN_SLASH: // fall through
-		case TOKEN_L_PARENTHESIS: // fall through
-		case TOKEN_R_PARENTHESIS: // fall through
 			printf("token read: %c ", t.kind);
 			break;
         case TOKEN_END_OF_LINE:
@@ -214,14 +196,11 @@ void print_token(token t) {
 	}
 }
 
-int is_operator(token t) {
+bool is_operator(token t) {
 	switch(t.kind) {
-		case TOKEN_PLUS:
-			return 1;
-		case TOKEN_MINUS:
-			return 1;
-		case TOKEN_STAR:
-			return 1;
+		case TOKEN_PLUS: // fall through
+		case TOKEN_MINUS: // fall through
+		case TOKEN_STAR: // fall through
 		case TOKEN_SLASH:
 			return 1;
 		default:
