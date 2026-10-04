@@ -213,8 +213,8 @@ bool is_operator(token t) {
 		case TOKEN_MINUS: // fall through
 		case TOKEN_STAR: // fall through
 		case TOKEN_SLASH:
-			return 1;
+			return true;
 		default:
-			return 0;
+			return false;
 	}
 }
