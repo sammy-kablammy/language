@@ -177,7 +177,7 @@ int operator_prec(token t) {
 		case TOKEN_STAR:
 			return MULT_PREC;
 		default:
-			return MIN_PREC;
+			return -1;
 	}
 }
 
