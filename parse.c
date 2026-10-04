@@ -144,25 +144,22 @@ assignment_node* parse_assignment(token_array tokens, parser_state* state) {
 //       10 + 20			infix expression
 //       -5					number
 //       y					identifier
-expression_node* parse_expression(token_array tokens, parser_state* state) {
-	expression_node* leaf = parse_leaf(tokens.buf[state->position_in_token_stream], state);
+expression_node* parse_expression(token_array tokens, parser_state* state, int prev_precedence) {
+	expression_node* left = parse_leaf(tokens.buf[state->position_in_token_stream], state);
 	// We have an operator to capture and a right side
-	if (is_operator(tokens.buf[state->position_in_token_stream])) {
+	while (is_operator(tokens.buf[state->position_in_token_stream]) && prev_precedence < next_prec) {
 		// An operator means this is an in-fix expression
 		infix_node* infix = xalloc(sizeof(infix_node));
 		infix->operator = tokens.buf[state->position_in_token_stream];
 		state->position_in_token_stream++;
-		infix->left = leaf;
-		infix->right = parse_expression(tokens, state);
+		infix->left = left;
+		infix->right = parse_expression(tokens, state, next_operator_prec);
 		expression_node* expression = xalloc(sizeof(expression_node));
 		expression->value.infix = infix;
 		expression->kind = INFIX;
-		return expression;
 	}
 	// There is not an operator, meaning this is a leaf node. Return the leaf as an expression
-	else {
-		return leaf;
-	}
+    return left;
 }
 
 expression_node* parse_leaf(token t, parser_state* state) {
