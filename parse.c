@@ -1,15 +1,11 @@
 typedef struct parser_state {
-    uint64_t position_in_token_stream;
+	token_array tokens;
+    uint64_t pos;
 } parser_state;
 
 typedef struct assignment_node assignment_node;
 typedef struct expression_node expression_node;
 typedef struct infix_node infix_node;
-
-struct assignment_node {
-	string identifier;
-	expression_node* expression;
-};
 
 struct expression_node {
     enum {
@@ -25,15 +21,20 @@ struct expression_node {
     } value;
 };
 
+struct assignment_node {
+	string identifier;
+	expression_node expression;
+};
+
 struct infix_node {
-    expression_node *left;
-    expression_node *right;
+    expression_node left;
+    expression_node right;
     token operator;
 };
 
-assignment_node* parse_assignment(token_array tokens, parser_state* state);
-expression_node* parse_expression(token_array tokens, parser_state* state, int prev_precedence);
-expression_node* parse_leaf(token t, parser_state* state);
+assignment_node* parse_assignment(parser_state* state);
+expression_node parse_expression(parser_state* state, int prev_precedence);
+expression_node parse_leaf(parser_state* state);
 int operator_prec(token t);
 void print_token(token t);
 bool is_operator(token t);
@@ -61,51 +62,52 @@ int operator_prec(token t) {
 
 assignment_node** parse_entire_file(token_array tokens) {
 	parser_state* state = xalloc(sizeof(parser_state));
+	state->tokens = tokens;
 	assignment_node** assignments = xalloc(sizeof(assignment_node*) * 1000);
 	int assignment_index = 0;
-	while (state->position_in_token_stream+1 < tokens.length) {
+	while (state->pos+1 < state->tokens.length) {
 		// store statement inside larger structure
-		assignments[assignment_index] = parse_assignment(tokens, state);
-		expression_node* e = assignments[assignment_index]->expression;
-		while (e != NULL) {
-			if (e->kind == INT) {
-				printf("%d ", e->value.integer);
+		assignments[assignment_index] = parse_assignment(state);
+		expression_node e = assignments[assignment_index]->expression;
+		while (true) {
+			if (e.kind == INT) {
+				printf("%d ", e.value.integer);
 				break;
 			}
-			else if (e->kind == IDENTIFIER) {
-				print_string(e->value.identifier);
+			else if (e.kind == IDENTIFIER) {
+				print_string(e.value.identifier);
 				printf(" ");
 				break;
 			}
-			else if (e->kind == INFIX) {
-				if (e->value.infix->left->kind == IDENTIFIER) {
-				print_string(e->value.infix->left->value.identifier);
+			else if (e.kind == INFIX) {
+				if (e.value.infix->left.kind == IDENTIFIER) {
+				print_string(e.value.infix->left.value.identifier);
 				printf(" ");
 				}
-				else if (e->value.infix->left->kind == INT) {
-					printf("%d ", e->value.infix->left->value.integer);
+				else if (e.value.infix->left.kind == INT) {
+					printf("%d ", e.value.infix->left.value.integer);
 				}
-				printf("%c ", e->value.infix->operator.kind);
-				e = e->value.infix->right;
+				printf("%c ", e.value.infix->operator.kind);
+				e = e.value.infix->right;
 			}
 		}
 		printf("\n");
 		// read current token and expect it to be a newline
-		if (tokens.buf[state->position_in_token_stream].kind != TOKEN_END_OF_LINE) {
+		if (state->tokens.buf[state->pos].kind != TOKEN_END_OF_LINE) {
 			// send error
-			if (is_operator(tokens.buf[state->position_in_token_stream])) {
-				printf("newline expected, %c found instead\n", tokens.buf[state->position_in_token_stream].kind);
+			if (is_operator(state->tokens.buf[state->pos])) {
+				printf("newline expected, %c found instead\n", state->tokens.buf[state->pos].kind);
 			}
-			else if (tokens.buf[state->position_in_token_stream].kind == TOKEN_ASSIGN) {
-				printf("newline expected, %c found instead\n", tokens.buf[state->position_in_token_stream].kind);
+			else if (state->tokens.buf[state->pos].kind == TOKEN_ASSIGN) {
+				printf("newline expected, %c found instead\n", state->tokens.buf[state->pos].kind);
 			}
-			else if (tokens.buf[state->position_in_token_stream].kind == TOKEN_IDENTIFIER) {
+			else if (state->tokens.buf[state->pos].kind == TOKEN_IDENTIFIER) {
 				printf("newline expected, ");
-				print_string(tokens.buf[state->position_in_token_stream].value.identifier);
+				print_string(state->tokens.buf[state->pos].value.identifier);
 				printf(" found instead\n");
 			}
-			else if (tokens.buf[state->position_in_token_stream].kind == TOKEN_INTEGER) {
-				printf("newline expected, %ld found instead\n", tokens.buf[state->position_in_token_stream].value.integer);
+			else if (state->tokens.buf[state->pos].kind == TOKEN_INTEGER) {
+				printf("newline expected, %ld found instead\n", state->tokens.buf[state->pos].value.integer);
 			}
 			else {
 				printf("unrecognized or no token found instead\n");
@@ -113,7 +115,7 @@ assignment_node** parse_entire_file(token_array tokens) {
 			break;
 		}
 		else {
-			state->position_in_token_stream++;
+			state->pos++;
 		}
 		// increment our position in larger structure of statement storage
 		assignment_index++;
@@ -126,57 +128,55 @@ assignment_node** parse_entire_file(token_array tokens) {
 	return assignments;
 }
 
-assignment_node* parse_assignment(token_array tokens, parser_state* state) {
+assignment_node* parse_assignment(parser_state* state) {
 	assignment_node* assignment = xalloc(sizeof(assignment_node));
 	// we are expecting an assignment, so there should be at least 2 more tokens,
 	// and the second token should be an assignment token
 	
 	
-	assignment->identifier = tokens.buf[state->position_in_token_stream].value.identifier;
-	state->position_in_token_stream += 1;
-	if (tokens.buf[state->position_in_token_stream].kind != TOKEN_ASSIGN) {
-		print_token(tokens.buf[state->position_in_token_stream]);
+	assignment->identifier = state->tokens.buf[state->pos].value.identifier;
+	state->pos += 1;
+	if (state->tokens.buf[state->pos].kind != TOKEN_ASSIGN) {
+		print_token(state->tokens.buf[state->pos]);
 		panic(" receieved, expected operator instead");
 	}
-	state->position_in_token_stream += 1;
-	assignment->expression = parse_expression(tokens, state, MIN_PREC);
+	state->pos += 1;
+	assignment->expression = parse_expression(state, MIN_PREC);
 	return assignment;
 }
 
-expression_node* parse_expression(token_array tokens, parser_state* state, int prev_precedence) {
-	expression_node* left = parse_leaf(tokens.buf[state->position_in_token_stream], state);
-	// We have an operator to capture and a right side
-	int next_precedence = operator_prec(tokens.buf[state->position_in_token_stream]);
-	while (is_operator(tokens.buf[state->position_in_token_stream]) && prev_precedence < next_precedence) {
-		// An operator means this is an in-fix expression
-		infix_node* infix = xalloc(sizeof(infix_node));
-		infix->operator = tokens.buf[state->position_in_token_stream];
-		state->position_in_token_stream++;
-		infix->left = left;
-		infix->right = parse_expression(tokens, state, next_precedence);
-		expression_node* expression = xalloc(sizeof(expression_node));
-		expression->value.infix = infix;
-		expression->kind = INFIX;
+expression_node parse_expression(parser_state* state, int prev_precedence) {
+	expression_node left = parse_leaf(state);
+	token potential_op = state->tokens.buf[state->pos];
+	while (is_operator(potential_op) && prev_precedence < operator_prec(potential_op)) {
+		int next_precedence = operator_prec(potential_op);
+		expression_node parent = {.kind=INFIX};
+		parent.value.infix = xalloc(sizeof(infix_node));
+		parent.value.infix->operator = potential_op;
+		state->pos++;
+		potential_op = state->tokens.buf[state->pos];
+		parent.value.infix->left = left;
+		parent.value.infix->right = parse_expression(state, next_precedence);
+		left = parent;
 	}
-	// There is not an operator, meaning this is a leaf node. Return the leaf as an expression
     return left;
 }
 
-expression_node* parse_leaf(token t, parser_state* state) {
-	expression_node* leaf = xalloc(sizeof(expression_node));
+expression_node parse_leaf(parser_state* state) {
+	expression_node leaf;
+	token t = state->tokens.buf[state->pos];
 	if (t.kind == TOKEN_INTEGER) {
-		leaf->kind = INT;
-		leaf->value.integer = t.value.integer;
-		state->position_in_token_stream++;
+		leaf.kind = INT;
+		leaf.value.integer = t.value.integer;
+		state->pos++;
 	}
 	else if (t.kind == TOKEN_IDENTIFIER) {
-		leaf->kind = IDENTIFIER;
-		leaf->value.identifier = t.value.identifier;
-		state->position_in_token_stream++;
+		leaf.kind = IDENTIFIER;
+		leaf.value.identifier = t.value.identifier;
+		state->pos++;
 	}
 	else {
-		
-		printf("unrecognized syntax\n");
+		panic("unrecognized syntax\n");
 	}
 	return leaf;
 }
