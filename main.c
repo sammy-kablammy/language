@@ -1,5 +1,6 @@
 // This project is a unity build / single compilation unit build.
 #include "platform.c"
+#include "arena.c"
 #include "lex.c"
 #include "parse.c"
 
