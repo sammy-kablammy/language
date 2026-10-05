@@ -135,11 +135,13 @@ assignment_node* parse_assignment(parser_state* state) {
 	
 	
 	assignment->identifier = state->tokens.buf[state->pos].value.identifier;
+	print_token(state->tokens.buf[state->pos]);
 	state->pos += 1;
 	if (state->tokens.buf[state->pos].kind != TOKEN_ASSIGN) {
 		print_token(state->tokens.buf[state->pos]);
 		panic(" receieved, expected operator instead");
 	}
+	print_token(state->tokens.buf[state->pos]);
 	state->pos += 1;
 	assignment->expression = parse_expression(state, MIN_PREC);
 	return assignment;
@@ -153,6 +155,7 @@ expression_node parse_expression(parser_state* state, int prev_precedence) {
 		expression_node parent = {.kind=INFIX};
 		parent.value.infix = xalloc(sizeof(infix_node));
 		parent.value.infix->operator = potential_op;
+		print_token(state->tokens.buf[state->pos]);
 		state->pos++;
 		potential_op = state->tokens.buf[state->pos];
 		parent.value.infix->left = left;
@@ -168,11 +171,13 @@ expression_node parse_leaf(parser_state* state) {
 	if (t.kind == TOKEN_INTEGER) {
 		leaf.kind = INT;
 		leaf.value.integer = t.value.integer;
+		print_token(state->tokens.buf[state->pos]);
 		state->pos++;
 	}
 	else if (t.kind == TOKEN_IDENTIFIER) {
 		leaf.kind = IDENTIFIER;
 		leaf.value.identifier = t.value.identifier;
+		print_token(state->tokens.buf[state->pos]);
 		state->pos++;
 	}
 	else {
