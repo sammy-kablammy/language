@@ -81,8 +81,10 @@ assignment_node** parse_entire_file(token_array tokens) {
 				print_token(state->tokens.buf[state->pos]);
 				printf(" found instead\n");
 				panic("\n");
+				exit(1);
 			case TOKEN_END_OF_LINE:
 				state->pos += 1;
+				break;
 			default:
 				printf("potentially reached end of file, or unrecognized token\n");
 				break;
