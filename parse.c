@@ -69,35 +69,28 @@ assignment_node** parse_entire_file(token_array tokens) {
 		// store statement inside larger structure
 		assignments[assignment_index] = parse_assignment(state);
 		// read current token and expect it to be a newline
-		if (state->tokens.buf[state->pos].kind != TOKEN_END_OF_LINE) {
-			// send error
-			if (is_operator(state->tokens.buf[state->pos])) {
-				printf("newline expected, %c found instead\n", state->tokens.buf[state->pos].kind);
-			}
-			else if (state->tokens.buf[state->pos].kind == TOKEN_ASSIGN) {
-				printf("newline expected, %c found instead\n", state->tokens.buf[state->pos].kind);
-			}
-			else if (state->tokens.buf[state->pos].kind == TOKEN_IDENTIFIER) {
+		switch (state->tokens.buf[state->pos].kind) {
+			case TOKEN_ASSIGN: // fall through
+			case TOKEN_PLUS: // fall through
+			case TOKEN_MINUS: // fall through
+			case TOKEN_STAR: // fall through
+			case TOKEN_SLASH: // fall through
+			case TOKEN_INTEGER: // fall through
+			case TOKEN_IDENTIFIER:
 				printf("newline expected, ");
-				print_string(state->tokens.buf[state->pos].value.identifier);
+				print_token(state->tokens.buf[state->pos]);
 				printf(" found instead\n");
-			}
-			else if (state->tokens.buf[state->pos].kind == TOKEN_INTEGER) {
-				printf("newline expected, %ld found instead\n", state->tokens.buf[state->pos].value.integer);
-			}
-			else {
+				panic("\n");
+			case TOKEN_END_OF_LINE:
+				state->pos += 1;
+			default:
 				printf("potentially reached end of file, or unrecognized token\n");
 				break;
-			}
-			panic("\n");
-		}
-		else {
-			state->pos += 1;
 		}
 		// increment our position in larger structure of statement storage
 		assignment_index += 1;
 		if (assignment_index > 20) {
-			printf("something bad happened\n");
+			printf("something bad happened, make sure less than 20 assignments have been parsed\n");
 			break;
 		}
 	}
