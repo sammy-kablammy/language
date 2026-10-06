@@ -5,7 +5,7 @@
 
 int simulate_arithmetic(expression_node e);
 bool are_both_leaves(infix_node* node);
-int evaluate_leaves(infix_node* node);
+int evaluate_leaves(int left, int right, token operator);
 void print_expression(expression_node e);
 void print_leaves(infix_node* node);
 
@@ -22,7 +22,6 @@ int main(int argc, char **argv) {
     // syntax_tree top_level_statements[];
 	assignment_node** list = parse_entire_file(tokens);
 	printf("%d\n", simulate_arithmetic(list[0]->expression));
-	
 	/*
 	for each top level statement {
         codegen(statement);
@@ -33,15 +32,21 @@ int main(int argc, char **argv) {
 	return 0;
 }
 int simulate_arithmetic(expression_node e) {
-	if (e.value.infix->left.kind != INT && e.value.infix->left.kind != IDENTIFIER) {
-		e.value.infix->left.value.integer = simulate_arithmetic(e.value.infix->left);
-		e.value.infix->left.kind = INT;
+	int left = 0;
+	int right = 0;
+	if (e.value.infix->left.kind == INFIX) {
+		left = simulate_arithmetic(e.value.infix->left);
 	}
-	if (e.value.infix->right.kind != INT && e.value.infix->right.kind != IDENTIFIER) {
-		e.value.infix->right.value.integer = simulate_arithmetic(e.value.infix->right);
-		e.value.infix->right.kind = INT;
+	else if (e.value.infix->left.kind == INT) {
+		left = e.value.infix->left.value.integer;
 	}
-	return evaluate_leaves(e.value.infix);
+	if (e.value.infix->right.kind == INFIX) {
+		right = simulate_arithmetic(e.value.infix->right);
+	}
+	else if (e.value.infix->right.kind == INT) {
+		right = e.value.infix->right.value.integer;
+	}
+	return evaluate_leaves(left, right, e.value.infix->operator);
 }
 
 bool are_both_leaves(infix_node* node) {
@@ -50,22 +55,22 @@ bool are_both_leaves(infix_node* node) {
 	return false;
 }
 
-int evaluate_leaves(infix_node* node) {
-	switch(node->operator.kind) {
+int evaluate_leaves(int left, int right, token operator) {
+	switch(operator.kind) {
 		case TOKEN_PLUS:
-			printf("%d + %d\n", node->left.value.integer, node->right.value.integer);
-			return node->left.value.integer + node->right.value.integer;
+			printf("%d + %d\n", left, right);
+			return left + right;
 		case TOKEN_MINUS:
-			printf("%d + %d\n", node->left.value.integer, node->right.value.integer);
-			return node->left.value.integer - node->right.value.integer;
+			printf("%d - %d\n", left, right);
+			return left - right;
 		case TOKEN_STAR:
-			printf("%d + %d\n", node->left.value.integer, node->right.value.integer);
-			return node->left.value.integer * node->right.value.integer;
+			printf("%d * %d\n", left, right);
+			return left * right;
 		case TOKEN_SLASH:
-			printf("%d + %d\n", node->left.value.integer, node->right.value.integer);
-			return node->left.value.integer / node->right.value.integer;
+			printf("%d / %d\n", left, right);
+			return left / right;
 		default:
-			panic("wtf happened\n");
+			panic("what happened\n");
 			exit(1);
 	}
 }

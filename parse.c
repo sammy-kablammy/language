@@ -86,7 +86,8 @@ assignment_node** parse_entire_file(token_array tokens) {
 				printf("newline expected, %ld found instead\n", state->tokens.buf[state->pos].value.integer);
 			}
 			else {
-				printf("unrecognized or no token found instead\n");
+				printf("potentially reached end of file, or unrecognized token\n");
+				break;
 			}
 			panic("\n");
 		}
@@ -156,8 +157,12 @@ expression_node parse_expression(parser_state* state) {
 			parent.value.infix->right = parse_expression(state);
 		}
 	}
-	else {
+	else if (potential_op.kind != TOKEN_END_OF_LINE) {
+		print_token(potential_op);
 		panic("we shouldve had an operator here\n");
+	}
+	else if (potential_op.kind == TOKEN_END_OF_LINE) {
+		return left;
 	}
 	return parent;
 }
