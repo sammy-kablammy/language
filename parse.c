@@ -1,5 +1,6 @@
 typedef struct parser_state {
     uint64_t position_in_token_stream;
+    arena syntax_tree_arena;
 } parser_state;
 
 typedef struct assignment_node assignment_node;
@@ -38,6 +39,25 @@ int operator_prec(token t);
 void print_token(token t);
 bool is_operator(token t);
 
+typedef uint32_t node_id;
+
+// TODO derive this value, don't hardcode
+#define MAX_NODE_SIZE 128
+
+node_id parser_alloc(parser_state *state) {
+    return arena_alloc(&state->syntax_tree_arena);
+}
+
+// TODO this currently returns an expression but eventually it will the top
+// level node / the most general thing in the syntax tree
+expression_node *parser_get_node(parser_state *state, node_id id) {
+    return arena_get_element(&state->syntax_tree_arena, id);
+}
+
+void parser_free_all_nodes(parser_state *state) {
+    arena_free_all(&state->syntax_tree_arena);
+}
+
 enum {
 	MIN_PREC,
 	ADD_PREC,
@@ -61,6 +81,7 @@ int operator_prec(token t) {
 
 assignment_node** parse_entire_file(token_array tokens) {
 	parser_state* state = xalloc(sizeof(parser_state));
+	arena_init(&state->syntax_tree_arena, MAX_SYNTAX_TREE_NODE_BYTES);
 	assignment_node** assignments = xalloc(sizeof(assignment_node*) * 1000);
 	int assignment_index = 0;
 	while (state->position_in_token_stream+1 < tokens.length) {
