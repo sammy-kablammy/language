@@ -128,6 +128,7 @@ expression_node parse_expression(parser_state* state) {
 			nested_left_expression.value.infix->left = left;
 			nested_left_expression.value.infix->operator = potential_op;
 			nested_left_expression.value.infix->right = parse_leaf(state);
+			parent.kind = INFIX;
 			parent.value.infix = xalloc(sizeof(infix_node));
 			parent.value.infix->left = nested_left_expression;
 			
