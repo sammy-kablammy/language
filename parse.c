@@ -41,8 +41,10 @@ bool is_operator(token t);
 
 typedef uint32_t node_id;
 
-// TODO derive this value, don't hardcode
-#define MAX_NODE_SIZE 128
+typedef union {
+    expression_node expression;
+    assignment_node assignment;
+} syntax_tree_node;
 
 node_id parser_alloc(parser_state *state) {
     return arena_alloc(&state->syntax_tree_arena);
@@ -81,7 +83,7 @@ int operator_prec(token t) {
 
 assignment_node** parse_entire_file(token_array tokens) {
 	parser_state* state = xalloc(sizeof(parser_state));
-	arena_init(&state->syntax_tree_arena, MAX_SYNTAX_TREE_NODE_BYTES);
+	arena_init(&state->syntax_tree_arena, sizeof(syntax_tree_node));
 	assignment_node** assignments = xalloc(sizeof(assignment_node*) * 1000);
 	int assignment_index = 0;
 	while (state->position_in_token_stream+1 < tokens.length) {
