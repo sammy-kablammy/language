@@ -7,6 +7,17 @@ typedef struct assignment_node assignment_node;
 typedef struct expression_node expression_node;
 typedef struct infix_node infix_node;
 
+struct infix_node {
+    expression_node *left;
+    expression_node *right;
+    token operator;
+};
+
+struct assignment_node {
+	string identifier;
+	expression_node *expression;
+};
+
 struct expression_node {
     enum {
         INFIX,
@@ -17,24 +28,18 @@ struct expression_node {
     union {
         int integer;
         string identifier;
-        infix_node *infix;
+        infix_node infix;
     } value;
 };
 
-struct assignment_node {
-	string identifier;
-	expression_node expression;
-};
 
-struct infix_node {
-    expression_node left;
-    expression_node right;
-    token operator;
-};
+// // TODO make syntax_tree_node with kind == EXPRESSION_INFIX
+// struct syntax_tree_node {
+// };
 
-assignment_node* parse_assignment(parser_state* state);
-expression_node parse_expression(parser_state* state);
-expression_node parse_leaf(parser_state* state);
+assignment_node *parse_assignment(parser_state* state);
+expression_node *parse_expression(parser_state* state, int prev_prec);
+expression_node *parse_leaf(parser_state* state);
 int operator_prec(token t);
 void print_token(token t);
 bool is_operator(token t);
@@ -98,7 +103,7 @@ assignment_node** parse_entire_file(token_array tokens) {
 	return assignments;
 }
 
-assignment_node* parse_assignment(parser_state* state) {
+assignment_node *parse_assignment(parser_state* state) {
 	assignment_node* assignment = xalloc(sizeof(assignment_node));
 	assignment->identifier = state->tokens.buf[state->pos].value.identifier;
 	state->pos += 1;
@@ -107,75 +112,48 @@ assignment_node* parse_assignment(parser_state* state) {
 		panic(" receieved, expected operator instead");
 	}
 	state->pos += 1;
-	assignment->expression = parse_expression(state);
+	assignment->expression = parse_expression(state, MIN_PREC);
 	return assignment;
 }
 
-expression_node parse_expression(parser_state* state) {
-	expression_node parent;
-	expression_node left = parse_leaf(state);
-	token potential_op = state->tokens.buf[state->pos];
-	state->pos += 1;
-	if (is_operator(potential_op)) {
-		// if op precedence is high, group a and b together as the left, and the rest as the right to expression
-		// { a * b + c } ==> { { a * b } + c
-		if (operator_prec(potential_op) == MULT_PREC) {
-			expression_node nested_left_expression;
-			nested_left_expression.kind = INFIX;
-			nested_left_expression.value.infix = xalloc(sizeof(infix_node));
-			nested_left_expression.value.infix->left = left;
-			nested_left_expression.value.infix->operator = potential_op;
-			nested_left_expression.value.infix->right = parse_leaf(state);
-			parent.kind = INFIX;
-			parent.value.infix = xalloc(sizeof(infix_node));
-			parent.value.infix->left = nested_left_expression;
-			
-			potential_op = state->tokens.buf[state->pos];
-			state->pos += 1;
-			if (is_operator(potential_op)) {
-				parent.value.infix->operator = potential_op;
-				parent.value.infix->right = parse_expression(state);
-			}
-			// edge case, don't create an extra nested expression
-			else {
-				return nested_left_expression;
-			}
-		}
-		// if op precedence is low, group a as left and the rest as the right of expression
-		// { a + b + c } ==> { a + { b + c } }
-		else if (operator_prec(potential_op) == ADD_PREC) {
-			parent.kind = INFIX;
-			parent.value.infix = xalloc(sizeof(infix_node));
-			parent.value.infix->left = left;
-			parent.value.infix->operator = potential_op;
-			parent.value.infix->right = parse_expression(state);
-		}
-	}
-	else if (potential_op.kind != TOKEN_END_OF_LINE) {
-		print_token(potential_op);
-		panic("we shouldve had an operator here\n");
-	}
-	else if (potential_op.kind == TOKEN_END_OF_LINE) {
-		return left;
-	}
-	return parent;
+expression_node *create_infix_expression(expression_node *left, token op, expression_node *right) {
+	expression_node* expression = xalloc(sizeof(expression_node));
+    expression->kind = INFIX;
+    expression->value.infix.left = left;
+    expression->value.infix.operator = op;
+    expression->value.infix.right = right;
+    return expression;
 }
 
-expression_node parse_leaf(parser_state* state) {
-	expression_node leaf;
+expression_node *parse_expression(parser_state* state, int prev_prec) {
+	expression_node *left = parse_leaf(state);
+	token potential_op = state->tokens.buf[state->pos];
+
+    while (is_operator(potential_op) && prev_prec < operator_prec(potential_op)) {
+        state->pos += 1;
+        expression_node *right = parse_expression(state, operator_prec(potential_op));
+        left = create_infix_expression(left, potential_op, right);
+        potential_op = state->tokens.buf[state->pos];
+    }
+
+    return left;
+}
+
+expression_node *parse_leaf(parser_state* state) {
+	expression_node *leaf = xalloc(sizeof(expression_node));
 	token t = state->tokens.buf[state->pos];
 	if (t.kind == TOKEN_INTEGER) {
-		leaf.kind = INT;
-		leaf.value.integer = t.value.integer;
+		leaf->kind = INT;
+		leaf->value.integer = t.value.integer;
 		state->pos++;
 	}
 	else if (t.kind == TOKEN_IDENTIFIER) {
-		leaf.kind = IDENTIFIER;
-		leaf.value.identifier = t.value.identifier;
+		leaf->kind = IDENTIFIER;
+		leaf->value.identifier = t.value.identifier;
 		state->pos++;
 	}
 	else {
-		panic("unrecognized syntax\n");
+		panic("unrecognized token kind in parse_leaf, got=%d\n", t.kind);
 	}
 	return leaf;
 }
