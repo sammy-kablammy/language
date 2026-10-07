@@ -3,8 +3,10 @@
 #include "arena.c"
 #include "lex.c"
 #include "parse.c"
+#include "simulate.c"
 
-void free_assignments(assignment_node** list);
+void print_expression(expression_node e);
+void print_leaves(infix_node* node);
 
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -18,7 +20,7 @@ int main(int argc, char **argv) {
     // Parse one entire file into multiple syntax trees, one per top-level declaration
     // syntax_tree top_level_statements[];
 	assignment_node** list = parse_entire_file(tokens);
-	
+	printf("%d\n", simulate_arithmetic(list[0]->expression));
 	/*
 	for each top level statement {
         codegen(statement);

@@ -1,0 +1,19 @@
+expressions:
+x = 10 + 20 // infix
+y = -5 // prefix
+x = y // number / variable
+
+declarations:
+x: int = 10
+in other words
+variable name, followed by :, followed by type, followed by =, followed by expression
+
+assignments:
+variable name, followed by =, followed by expression
+
+procedure call:
+f :: func(x: int, g: func(y: int): int): int {
+    return x + 1
+}
+in other words
+variable name, followed by ::, followed by variable name, followed by (, then stack opened and followed until stack empty and ) read

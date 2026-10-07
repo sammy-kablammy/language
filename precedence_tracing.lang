@@ -1,13 +1,5 @@
-enum precedence_levels {
-    PREC_MINIMUM,
-    PREC_ADD,
-    PREC_MULTIPLY,
-};
+consider a + b * c being parsed by a combination of recursive and iterative methods
 
-
-
-
-a + b * c
 parse_expression(PREC_MINIMUM)
     parse_leaf gives a
     next token is operator so the expr is not over yet
@@ -24,7 +16,8 @@ parse_expression(PREC_MINIMUM)
 
 
 
-a * b + c
+consider a similar a * b + c being parsed the same way
+
 parse_expression(PREC_MINIMUM)
     parse_leaf gives a
     next token is operator so expr is not over yet
@@ -37,4 +30,7 @@ parse_expression(PREC_MINIMUM)
     infix expression { a, *, b } 
     next token (+) is operator so not over yet
     prev prec (MIN) is less than next prec (ADD) so enter loop
-
+	create infix expression { { a * b } , +, parse_expression("c", PREC_ADD) }
+		parse_leaf gives c
+		next token is not operator, return c as expression
+	return infix expression { { a * b }, +, "c" }
