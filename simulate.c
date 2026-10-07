@@ -34,6 +34,5 @@ int evaluate_leaves(int left, int right, token operator) {
 			return left / right;
 		default:
 			panic("what happened\n");
-			exit(1);
 	}
 }

@@ -25,7 +25,7 @@ void print_string(string str) {
     }
 }
 
-void panic(const char *fmt, ...) {
+__attribute__((noreturn)) void panic(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
 

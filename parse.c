@@ -56,7 +56,6 @@ int operator_prec(token t) {
 		default:
 			print_token(t);
 			panic(" is not a recognizable operator");
-			exit(1);
 	}
 }
 
@@ -81,7 +80,6 @@ assignment_node** parse_entire_file(token_array tokens) {
 				print_token(state->tokens.buf[state->pos]);
 				printf(" found instead\n");
 				panic("\n");
-				exit(1);
 			case TOKEN_END_OF_LINE:
 				state->pos += 1;
 				break;
