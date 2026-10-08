@@ -14,6 +14,12 @@ void parser_advance(parser_state *state) {
     state->current_token = state->tokens.buf[state->pos];
 }
 
+void parser_eat_newlines(parser_state *state) {
+    while (state->pos < state->tokens.length && state->current_token.kind == TOKEN_END_OF_LINE) {
+        parser_advance(state);
+    }
+}
+
 typedef struct assignment_node assignment_node;
 typedef struct expression_node expression_node;
 typedef struct infix_node infix_node;
@@ -68,12 +74,6 @@ int operator_prec(token t) {
 			print_token(t);
 			panic(" is not a recognizable operator");
 	}
-}
-
-void parser_eat_newlines(parser_state *state) {
-    while (state->pos < state->tokens.length && state->current_token.kind == TOKEN_END_OF_LINE) {
-        parser_advance(state);
-    }
 }
 
 assignment_node** parse_entire_file(token_array tokens) {
