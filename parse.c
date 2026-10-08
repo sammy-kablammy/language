@@ -1,7 +1,18 @@
 typedef struct parser_state {
 	token_array tokens;
     uint64_t pos;
+    token current_token;
 } parser_state;
+
+// To keep current_token in sync, prefer this function instead of accessing
+// parser state directly.
+void parser_advance(parser_state *state) {
+    state->pos += 1;
+    if (state->pos > state->tokens.length) {
+        panic("Advancing parser to token pos %lu would go out of bounds", state->pos);
+    }
+    state->current_token = state->tokens.buf[state->pos];
+}
 
 typedef struct assignment_node assignment_node;
 typedef struct expression_node expression_node;
@@ -32,11 +43,6 @@ struct expression_node {
     } value;
 };
 
-
-// // TODO make syntax_tree_node with kind == EXPRESSION_INFIX
-// struct syntax_tree_node {
-// };
-
 assignment_node *parse_assignment(parser_state* state);
 expression_node *parse_expression(parser_state* state, int prev_prec);
 expression_node *parse_leaf(parser_state* state);
@@ -64,54 +70,47 @@ int operator_prec(token t) {
 	}
 }
 
+void parser_eat_newlines(parser_state *state) {
+    while (state->pos < state->tokens.length && state->current_token.kind == TOKEN_END_OF_LINE) {
+        parser_advance(state);
+    }
+}
+
 assignment_node** parse_entire_file(token_array tokens) {
-	parser_state* state = xalloc(sizeof(parser_state));
-	state->tokens = tokens;
+	parser_state state = {
+        .tokens = tokens,
+        .pos = 0,
+        .current_token = tokens.buf[0],
+    };
+
+    parser_eat_newlines(&state);
 	assignment_node** assignments = xalloc(sizeof(assignment_node*) * 1000);
 	int assignment_index = 0;
-	while (state->pos+1 < state->tokens.length) {
-		// store statement inside larger structure
-		assignments[assignment_index] = parse_assignment(state);
-		// read current token and expect it to be a newline
-		switch (state->tokens.buf[state->pos].kind) {
-			case TOKEN_ASSIGN: // fall through
-			case TOKEN_PLUS: // fall through
-			case TOKEN_MINUS: // fall through
-			case TOKEN_STAR: // fall through
-			case TOKEN_SLASH: // fall through
-			case TOKEN_INTEGER: // fall through
-			case TOKEN_IDENTIFIER:
-				printf("newline expected, ");
-				print_token(state->tokens.buf[state->pos]);
-				printf(" found instead\n");
-				panic("\n");
-			case TOKEN_END_OF_LINE:
-				state->pos += 1;
-				break;
-			default:
-				printf("potentially reached end of file, or unrecognized token\n");
-				break;
-		}
-		// increment our position in larger structure of statement storage
+	while (state.pos < state.tokens.length) {
+		assignments[assignment_index] = parse_assignment(&state);
+        parser_eat_newlines(&state);
+
 		assignment_index += 1;
 		if (assignment_index > 20) {
-			printf("something bad happened, make sure less than 20 assignments have been parsed\n");
-			break;
+			panic("make sure fewer than 20 assignments have been parsed\n");
 		}
 	}
-	free(state);
+
 	return assignments;
 }
 
 assignment_node *parse_assignment(parser_state* state) {
 	assignment_node* assignment = xalloc(sizeof(assignment_node));
-	assignment->identifier = state->tokens.buf[state->pos].value.identifier;
-	state->pos += 1;
-	if (state->tokens.buf[state->pos].kind != TOKEN_ASSIGN) {
-		print_token(state->tokens.buf[state->pos]);
+    if (state->current_token.kind != TOKEN_IDENTIFIER) {
+        panic("parse_assignment currently expects left side of '=' to be an identifier");
+    }
+	assignment->identifier = state->current_token.value.identifier;
+    parser_advance(state);
+	if (state->current_token.kind != TOKEN_ASSIGN) {
+		print_token(state->current_token);
 		panic(" receieved, expected operator instead");
 	}
-	state->pos += 1;
+    parser_advance(state);
 	assignment->expression = parse_expression(state, MIN_PREC);
 	return assignment;
 }
@@ -127,13 +126,12 @@ expression_node *create_infix_expression(expression_node *left, token op, expres
 
 expression_node *parse_expression(parser_state* state, int prev_prec) {
 	expression_node *left = parse_leaf(state);
-	token potential_op = state->tokens.buf[state->pos];
 
-    while (is_operator(potential_op) && prev_prec < operator_prec(potential_op)) {
-        state->pos += 1;
-        expression_node *right = parse_expression(state, operator_prec(potential_op));
-        left = create_infix_expression(left, potential_op, right);
-        potential_op = state->tokens.buf[state->pos];
+    while (is_operator(state->current_token) && prev_prec < operator_prec(state->current_token)) {
+        token op = state->current_token;
+        parser_advance(state);
+        expression_node *right = parse_expression(state, operator_prec(op));
+        left = create_infix_expression(left, op, right);
     }
 
     return left;
@@ -141,20 +139,18 @@ expression_node *parse_expression(parser_state* state, int prev_prec) {
 
 expression_node *parse_leaf(parser_state* state) {
 	expression_node *leaf = xalloc(sizeof(expression_node));
-	token t = state->tokens.buf[state->pos];
-	if (t.kind == TOKEN_INTEGER) {
+	if (state->current_token.kind == TOKEN_INTEGER) {
 		leaf->kind = INT;
-		leaf->value.integer = t.value.integer;
-		state->pos++;
+		leaf->value.integer = state->current_token.value.integer;
 	}
-	else if (t.kind == TOKEN_IDENTIFIER) {
+	else if (state->current_token.kind == TOKEN_IDENTIFIER) {
 		leaf->kind = IDENTIFIER;
-		leaf->value.identifier = t.value.identifier;
-		state->pos++;
+		leaf->value.identifier = state->current_token.value.identifier;
 	}
 	else {
-		panic("unrecognized token kind in parse_leaf, got=%d\n", t.kind);
+		panic("unrecognized token kind in parse_leaf, got=%d\n", state->current_token.kind);
 	}
+    parser_advance(state);
 	return leaf;
 }
 

@@ -1,5 +1,8 @@
 typedef struct token {
     enum {
+        // This is never set, but it's convenient while debugging to have the
+        // zero value represent something:
+        TOKEN_INVALID = 0,
         // For single-character tokens, just use their ascii value (that way
         // they can be printed directly):
         TOKEN_ASSIGN = '=',
