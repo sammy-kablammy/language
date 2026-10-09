@@ -25,6 +25,15 @@ void print_string(string str) {
     }
 }
 
+bool string_equals_cstring(string s1, const char *s2) {
+    for (uint64_t i = 0; i < s1.length && s2[i] != '\0'; i++) {
+        if (s1.buf[i] != s2[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 __attribute__((noreturn)) void panic(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);

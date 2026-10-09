@@ -21,6 +21,7 @@ void parser_eat_newlines(parser_state *state) {
 }
 
 typedef struct assignment_node assignment_node;
+typedef struct statement_node statement_node;
 typedef struct expression_node expression_node;
 typedef struct infix_node infix_node;
 
@@ -33,6 +34,22 @@ struct infix_node {
 struct assignment_node {
 	string identifier;
 	expression_node *expression;
+};
+
+struct statement_node {
+    enum {
+        ASSIGNMENT,
+        RETURN,
+    } kind;
+
+    union {
+        assignment_node assignment;
+        // This one's a pointer because a return statement may or may not have
+        // an expression with it. NULL pointer represents plain return.
+        expression_node *maybe_return_expression;
+    } value;
+
+    statement_node *next;
 };
 
 struct expression_node {
@@ -49,7 +66,8 @@ struct expression_node {
     } value;
 };
 
-assignment_node *parse_assignment(parser_state* state);
+assignment_node parse_assignment(parser_state* state);
+statement_node *parse_statement(parser_state* state);
 expression_node *parse_expression(parser_state* state, int prev_prec);
 expression_node *parse_leaf(parser_state* state);
 int operator_prec(token t);
@@ -76,7 +94,7 @@ int operator_prec(token t) {
 	}
 }
 
-assignment_node** parse_entire_file(token_array tokens) {
+statement_node* parse_entire_file(token_array tokens) {
 	parser_state state = {
         .tokens = tokens,
         .pos = 0,
@@ -84,35 +102,59 @@ assignment_node** parse_entire_file(token_array tokens) {
     };
 
     parser_eat_newlines(&state);
-	assignment_node** assignments = xalloc(sizeof(assignment_node*) * 1000);
-	int assignment_index = 0;
-	while (state.pos < state.tokens.length) {
-		assignments[assignment_index] = parse_assignment(&state);
-        parser_eat_newlines(&state);
 
-		assignment_index += 1;
-		if (assignment_index > 20) {
-			panic("make sure fewer than 20 assignments have been parsed\n");
-		}
+    statement_node *first_statement = NULL;
+	if (state.pos < state.tokens.length) {
+		first_statement = parse_statement(&state);
+        parser_eat_newlines(&state);
+    }
+
+    statement_node *current_statement = first_statement;
+	while (state.pos < state.tokens.length) {
+        current_statement->next = parse_statement(&state);
+        parser_eat_newlines(&state);
+        current_statement = current_statement->next;
 	}
 
-	return assignments;
+	return first_statement;
 }
 
-assignment_node *parse_assignment(parser_state* state) {
-	assignment_node* assignment = xalloc(sizeof(assignment_node));
+assignment_node parse_assignment(parser_state* state) {
     if (state->current_token.kind != TOKEN_IDENTIFIER) {
         panic("parse_assignment currently expects left side of '=' to be an identifier");
     }
-	assignment->identifier = state->current_token.value.identifier;
+    assignment_node assignment = { 0 };
+	assignment.identifier = state->current_token.value.identifier;
     parser_advance(state);
 	if (state->current_token.kind != TOKEN_ASSIGN) {
 		print_token(state->current_token);
 		panic(" receieved, expected operator instead");
 	}
     parser_advance(state);
-	assignment->expression = parse_expression(state, MIN_PREC);
+	assignment.expression = parse_expression(state, MIN_PREC);
 	return assignment;
+}
+
+statement_node *parse_statement(parser_state *state) {
+    statement_node *stmt = xalloc(sizeof(statement_node));
+    switch (state->current_token.kind) {
+        case TOKEN_RETURN:
+            stmt->kind = RETURN;
+            parser_advance(state);
+            if (state->current_token.kind == TOKEN_END_OF_LINE) {
+                stmt->value.maybe_return_expression = NULL;
+            } else {
+                stmt->value.maybe_return_expression = parse_expression(state, MIN_PREC);
+            }
+            break;
+        case TOKEN_IDENTIFIER:
+            stmt->kind = ASSIGNMENT;
+            stmt->value.assignment = parse_assignment(state);
+            break;
+        default:
+            panic("Unrecognized token kind (%d) in parse_statement", state->current_token.kind);
+    }
+    return stmt;
 }
 
 expression_node *create_infix_expression(expression_node *left, token op, expression_node *right) {
