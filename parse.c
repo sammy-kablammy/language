@@ -48,6 +48,8 @@ struct statement_node {
         // an expression with it. NULL pointer represents plain return.
         expression_node *maybe_return_expression;
     } value;
+
+    statement_node *next;
 };
 
 struct expression_node {
@@ -92,7 +94,7 @@ int operator_prec(token t) {
 	}
 }
 
-statement_node** parse_entire_file(token_array tokens) {
+statement_node* parse_entire_file(token_array tokens) {
 	parser_state state = {
         .tokens = tokens,
         .pos = 0,
@@ -100,19 +102,21 @@ statement_node** parse_entire_file(token_array tokens) {
     };
 
     parser_eat_newlines(&state);
-	statement_node** statements = xalloc(sizeof(assignment_node*) * 1000);
-	int statement_index = 0;
-	while (state.pos < state.tokens.length) {
-		statements[statement_index] = parse_statement(&state);
-        parser_eat_newlines(&state);
 
-		statement_index += 1;
-		if (statement_index > 20) {
-			panic("make sure fewer than 20 statements have been parsed\n");
-		}
+    statement_node *first_statement = NULL;
+	if (state.pos < state.tokens.length) {
+		first_statement = parse_statement(&state);
+        parser_eat_newlines(&state);
+    }
+
+    statement_node *current_statement = first_statement;
+	while (state.pos < state.tokens.length) {
+        current_statement->next = parse_statement(&state);
+        parser_eat_newlines(&state);
+        current_statement = current_statement->next;
 	}
 
-	return statements;
+	return first_statement;
 }
 
 assignment_node parse_assignment(parser_state* state) {

@@ -12,29 +12,28 @@ int main(int argc, char **argv) {
     if (argc != 2) {
         panic("Usage: '%s <file>'", argv[0]);
     }
-	//  read input file
     string contents = read_entire_file(argv[1]);
-    (void)contents;
     token_array tokens = lex_entire_file(contents);
 
-    // Parse one entire file into multiple syntax trees, one per top-level declaration
-    // syntax_tree top_level_statements[];
-	statement_node** list = parse_entire_file(tokens);
-	printf("%d\n", simulate_arithmetic(list[0]->value.assignment.expression));
+	statement_node *first_statement = parse_entire_file(tokens);
+
+    printf("\n🔢Simulate🤓\n\n");
+    statement_node *current_statement = first_statement;
+    while (current_statement != NULL) {
+        if (current_statement->kind == ASSIGNMENT) {
+            int result = simulate_arithmetic(current_statement->value.assignment.expression);
+            printf("%d\n", result);
+            printf("\n");
+        }
+        current_statement = current_statement->next;
+    }
 
     printf("\n✨Pretty✨\n\n");
-    pretty_print_statement(list[0]);
-    pretty_print_statement(list[1]);
-    pretty_print_statement(list[2]);
-    pretty_print_statement(list[3]);
-    pretty_print_statement(list[4]);
-
-	/*
-	for each top level statement {
-        codegen(statement);
+    current_statement = first_statement;
+    while (current_statement != NULL) {
+        pretty_print_statement(current_statement);
+        current_statement = current_statement->next;
     }
-	*/
-	
-	free(list);
+
 	return 0;
 }
