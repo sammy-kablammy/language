@@ -39,7 +39,6 @@ struct assignment_node {
 struct statement_node {
     enum {
         ASSIGNMENT,
-        // TODO(sam) consider storing out of band e.g. RETURN_EXPRESSION and RETURN_WITHOUT_EXPRESSION
         RETURN,
     } kind;
 

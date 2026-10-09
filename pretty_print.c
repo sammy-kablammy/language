@@ -1,6 +1,3 @@
-// Currently, expressions are printed fully parenthesized. This proves that
-// operator precedence correctly parsed. A better version of this would try to
-// match the parenthesization of the source code a bit better though.
 void pretty_print_expression(expression_node *expression) {
     switch (expression->kind) {
         case INFIX:
