@@ -1,18 +1,9 @@
 # todo
 
-## phase 1
-
-    file -> token_array -> syntax_tree_node[] -> pretty_print(syntax_tree_node)
+    file -> token_array -> list of syntax tree nodes -> pretty_print(syntax_tree_node)
                            ^
          one syntax tree per top-level declaration
        this does mean top level declarations are unordered / must be const
-
-- [x] basic lexing of entire file
-- [ ] moar lexing
-- [ ] parsing
-- [ ] pretty printing
-  - i think a roundtrip of source -> syntax tree -> pretty print is a decent way
-    to test the parser early days
 
 sample thing we should be able to pretty print by the end of this:
 ```text
@@ -29,11 +20,36 @@ main :: func(argc: int) {
 }
 ```
 
-- [ ] correctly parse operator precedence. example:
-```text
-main :: func(argc: int) {
-    thing1: int = 10 + 20 * 30
-    thing2: int = 40 * 50 - 60
-    thing3: int = 2 * (1 + 3 * (4 + 5))
-}
-```
+- [ ] some proper test cases
+- [ ] CI / github actions
+  - [ ] compiler should compile
+  - [ ] tests should pass
+  - [ ] any other makefile tweaks we want
+
+language features:
+- [ ] string literal expressions
+- [ ] more binary operators
+  - [ ] logical `&&`, `||`
+  - [ ] dot operator
+- [ ] unary operators
+  - [ ] logical `!`
+  - [ ] negation `-`
+- [ ] comments
+- [ ] import keyword like `import "filename"`
+- [ ] correctly parse operator precedence
+  - [x] infix operators
+  - [ ] handle parenthesized expressions like `a * (b + c)`
+- [ ] function call expressions
+  - [ ] array subscript expressions (use `[` instead of `(` for this)
+- [ ] if statements
+- [ ] while loops
+  - [ ] consider for-loop
+- [ ] function declaration expressions
+- [ ] struct declarations
+
+future
+- typecheck
+- bytecode generation
+- bytecode interpreter?? 👀😎
+- optimization
+- machine code output
