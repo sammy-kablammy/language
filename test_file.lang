@@ -1,1 +1,5 @@
-testvar1 = 4 * 5 * 8 * 7
+testvar1 = 1 + 2 * 3 + 4 * 100 + 17
+result = 500 - 100
+return
+return foo
+return bar * baz + 1

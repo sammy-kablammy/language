@@ -14,6 +14,7 @@ typedef struct token {
         // multicharacter or non-ascii tokens start above the ascii range:
         TOKEN_IDENTIFIER = 128,
         TOKEN_INTEGER,
+        TOKEN_RETURN,
     } kind;
     union {
         string identifier; // Only used for identifiers
@@ -84,6 +85,12 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
         *i += 1;
         identifier.length += 1;
     }
+
+    if (string_equals_cstring(identifier, "return")) {
+        return (token){ .kind = TOKEN_RETURN };
+    }
+    // Other keywords go here
+
     return (token){
         .kind = TOKEN_IDENTIFIER,
         .value.identifier = identifier,
