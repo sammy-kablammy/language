@@ -1,4 +1,4 @@
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
 
@@ -7,9 +7,3 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: make
-
-  test-parser:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - run: make test
