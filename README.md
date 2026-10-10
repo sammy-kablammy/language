@@ -20,7 +20,7 @@ main :: func(argc: int) {
 }
 ```
 
-- [ ] some proper test cases
+- [X] some proper test cases
 - [ ] CI / github actions
   - [ ] compiler should compile
   - [ ] tests should pass
