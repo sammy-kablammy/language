@@ -1,6 +1,0 @@
-result = a + b
-result = a * b
-result = hello - world - bar - baz
-result = 1 + 2 * 4
-result = 3 * 5 + 8
-result = 100 - somevar / anothervar * 50 + 1

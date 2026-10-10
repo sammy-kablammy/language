@@ -12,14 +12,19 @@ indent() {
     sed 's/^/ | /'
 }
 
-for test_case in parser_test_cases/*.lang; do
+for test_case_full_name in parser_test_cases/*.lang; do
 
-    no_extension=$(basename "$test_case" '.lang')
-    expected="parser_test_cases/$no_extension.expected"
-    got="parser_test_cases/$no_extension.got"
-    heading="Test case $BLUE'$test_case'$CLEAR\n"
+    heading="Test case $BLUE'$test_case_full_name'$CLEAR\n"
+    test_case_basename=$(basename "$test_case_full_name" '.lang')
+    got="parser_test_cases/$test_case_basename.got"
 
-    ./compiler "$test_case" > "$got"
+    # When a '.expected' file is absent, treat the source code as already pretty printed.
+    expected="parser_test_cases/$test_case_basename.expected"
+    if [ ! -f "$expected" ]; then
+        expected="$test_case_full_name"
+    fi
+
+    ./compiler "$test_case_full_name" > "$got"
 
     if diff -q "$expected" "$got" 2>&1 >/dev/null; then
         printf "$GREEN$BOLD[ PASS ]$CLEAR $heading"
