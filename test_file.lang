@@ -1,5 +1,13 @@
+
+// this is a comment
 testvar1 = 1 + 2 * 3 + 4 * 100 + 17
 result = 500 - 100
+/* this
+is
+a
+multi line
+comment
+*/
 return
 return foo
 return bar * baz + 1
