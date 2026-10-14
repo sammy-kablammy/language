@@ -21,10 +21,9 @@ main :: func(argc: int) {
 ```
 
 - [X] some proper test cases
-- [ ] CI / github actions
+- [X] CI / github actions
   - [x] compiler should compile
-  - [ ] tests should pass
-  - [ ] any other makefile tweaks we want
+  - [X] tests should pass
 
 language features:
 - [ ] string literal expressions
