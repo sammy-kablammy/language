@@ -1,0 +1,3 @@
+lhs = rhs
+there_are_extra = spaces + in + this - line
+unnecessary_tab = 67
