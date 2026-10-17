@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# (invoke this script from the repo's root)
+
+RED="\e[31m"
+GREEN="\e[32m"
+BLUE="\e[34m"
+BOLD="\e[1m"
+CLEAR="\e[0m"
+
+indent() {
+    sed 's/^/ | /'
+}
+
+for test_case_full_name in parser_test_cases/*.lang; do
+
+    heading="Test case $BLUE'$test_case_full_name'$CLEAR\n"
+    test_case_basename=$(basename "$test_case_full_name" '.lang')
+    got="parser_test_cases/$test_case_basename.got"
+
+    # When a '.expected' file is absent, treat the source code as already pretty printed.
+    expected="parser_test_cases/$test_case_basename.expected"
+    if [ ! -f "$expected" ]; then
+        expected="$test_case_full_name"
+    fi
+
+    ./compiler "$test_case_full_name" > "$got"
+
+    if diff -q "$expected" "$got" 2>&1 >/dev/null; then
+        printf "$GREEN$BOLD[ PASS ]$CLEAR $heading"
+    else
+        printf "$RED$BOLD[ FAIL ]$CLEAR $heading"
+        diff --color=always "$expected" "$got" | indent
+    fi
+
+done
