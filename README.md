@@ -29,7 +29,7 @@ language features:
 - [ ] string literal expressions
 - [ ] more binary operators
   - [ ] logical `&&`, `||`
-  - [ ] dot operator
+  - [X] dot operator
 - [ ] unary operators
   - [ ] logical `!`
   - [ ] negation `-`
