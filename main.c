@@ -14,7 +14,9 @@ int main(int argc, char **argv) {
     }
     string contents = read_entire_file(argv[1]);
     token_array tokens = lex_entire_file(contents);
+	debug_print_tokens(tokens);
 
+	if (true) return 0;
 	statement_node *first_statement = parse_entire_file(tokens);
 
     printf("\n🔢Simulate🤓\n\n");
