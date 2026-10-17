@@ -36,6 +36,7 @@ language features to parse:
   - [ ] logical `!`
   - [ ] negation `-`
 - [ ] comments
+- [ ] break / continue keywords
 - [ ] import keyword like `import "filename"`
 - [ ] correctly parse operator precedence
   - [x] infix operators
@@ -46,7 +47,10 @@ language features to parse:
 - [ ] while loops
   - [ ] consider for-loop
 - [ ] function declaration expressions
+- [ ] array declarations
+- [ ] expressions as the left side of assignments like `arr[i] = 0`
 - [ ] struct declarations
+- [ ] type expressions
 
 typechecking phase:
 - [X] add builtin type (say bool), so there are at least two types to work with

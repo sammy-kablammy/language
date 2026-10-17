@@ -35,5 +35,13 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    printf("\n🤔Typecheck🤔\n\n");
+    current_statement = first_statement;
+    while (current_statement != NULL) {
+        pretty_print_statement(current_statement);
+        current_statement = current_statement->next;
+    }
+
+
 	return 0;
 }
