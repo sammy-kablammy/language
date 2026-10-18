@@ -48,9 +48,10 @@ language features to parse:
   - [ ] consider for-loop
 - [ ] function declaration expressions
 - [ ] array declarations
-- [ ] expressions as the left side of assignments like `arr[i] = 0`
 - [ ] struct declarations
-- [ ] type expressions
+- [ ] allow expressions as the left side of assignments. for example:
+  - `arr[i] = 0`
+  - `mystruct.myfield = 100`
 
 typechecking phase:
 - [X] add builtin type (say bool), so there are at least two types to work with
