@@ -15,6 +15,8 @@ typedef struct token {
         TOKEN_IDENTIFIER = 128,
         TOKEN_INTEGER,
         TOKEN_RETURN,
+        TOKEN_TRUE,
+        TOKEN_FALSE,
     } kind;
     union {
         string identifier; // Only used for identifiers
@@ -88,6 +90,12 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
 
     if (string_equals_cstring(identifier, "return")) {
         return (token){ .kind = TOKEN_RETURN };
+    }
+    if (string_equals_cstring(identifier, "true")) {
+        return (token){ .kind = TOKEN_TRUE };
+    }
+    if (string_equals_cstring(identifier, "false")) {
+        return (token){ .kind = TOKEN_FALSE };
     }
     // Other keywords go here
 

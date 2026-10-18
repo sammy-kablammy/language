@@ -13,6 +13,17 @@ void pretty_print_expression(expression_node *expression) {
         case IDENTIFIER:
             print_string(expression->value.identifier);
             break;
+        case BOOL:
+            if (expression->value.bool == true) {
+                printf("true");
+            } else if (expression->value.bool == false) {
+                printf("false");
+            } else {
+                panic("Somehow a bool expression got a nonboolean value");
+            }
+            break;
+        default:
+            panic("unhandled expression kind (%d) to print", expression->kind);
     }
 }
 

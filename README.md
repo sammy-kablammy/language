@@ -25,7 +25,9 @@ main :: func(argc: int) {
   - [x] compiler should compile
   - [X] tests should pass
 
-language features:
+the following TODOs are organized by compiler phase
+
+language features to parse:
 - [ ] string literal expressions
 - [ ] more binary operators
   - [ ] logical `&&`, `||`
@@ -46,8 +48,18 @@ language features:
 - [ ] function declaration expressions
 - [ ] struct declarations
 
+typechecking phase:
+- [X] add builtin type (say bool), so there are at least two types to work with
+- [ ] typed declarations `a = b` vs ``
+- [ ] basic "does LHS match RHS"
+- [ ] figure out numeric types. signed vs unsigned, floats. see go's untyped
+  integer literals and zig's `comptime_int` for reference
+- [ ] string literals
+- [ ] type inference `who_knows := some_expression_here`
+- [ ] first class types, builtin type called `type`
+- [ ] casting, for inspiration see https://www.gingerbill.org/article/2026/02/23/designing-odins-casting-syntax/
+
 future
-- typecheck
 - bytecode generation
 - bytecode interpreter?? 👀😎
 - optimization
