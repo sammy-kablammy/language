@@ -3,6 +3,7 @@
 #include "lex.c"
 #include "parse.c"
 #include "pretty_print.c"
+// #include "typecheck.c"
 
 void print_expression(expression_node e);
 void print_leaves(infix_node* node);
@@ -35,10 +36,10 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    printf("\n🤔Typecheck🤔\n\n");
+    // printf("\n🤔Typecheck🤔\n\n");
     current_statement = first_statement;
     while (current_statement != NULL) {
-        pretty_print_statement(current_statement);
+        // typecheck_statement(current_statement);
         current_statement = current_statement->next;
     }
 
