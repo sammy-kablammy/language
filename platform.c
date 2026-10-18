@@ -31,12 +31,39 @@ bool cstring_equals_cstring(char *s1, char *s2) {
 }
 
 bool string_equals_cstring(string s1, const char *s2) {
-    for (uint64_t i = 0; i < s1.length && s2[i] != '\0'; i++) {
+    uint64_t s2_length = strlen(s2);
+    if (s1.length != s2_length) {
+        return false;
+    }
+    for (uint64_t i = 0; i < s1.length && s2_length; i++) {
         if (s1.buf[i] != s2[i]) {
             return false;
         }
     }
     return true;
+}
+
+bool string_equals(string s1, string s2) {
+    if (s1.length != s2.length) {
+        return false;
+    }
+    for (uint64_t i = 0; i < s1.length && i < s2.length; i++) {
+        if (s1.buf[i] != s2.buf[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+string string_from_cstring(char *cstring) {
+    int len = 0;
+    while (cstring[len] != '\0') {
+        len += 1;
+    }
+    return (string){
+        .length = len,
+        .buf = cstring,
+    };
 }
 
 __attribute__((noreturn)) void panic(const char *fmt, ...) {
