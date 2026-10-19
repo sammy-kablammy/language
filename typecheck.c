@@ -3,7 +3,7 @@
 // able to do "x: int = (int)some_myint" but not "x: int = some_myint"
 // (casting syntax not finalized)
 
-// Symbol table maps identifiers to types. Like 
+// Symbol table maps identifiers to types.
 typedef struct symbol_table {
     struct symbol_table *parent;
 } symbol_table;

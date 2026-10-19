@@ -1,7 +1,7 @@
 // Really dumb string-to-int hash table. Good enough for now; implementation can
 // be swapped out easily enough.
 
-const int HASH_TABLE_INITIAL_ELEMENTS = 2;
+const int HASH_TABLE_INITIAL_ELEMENTS = 8;
 
 typedef struct hash_entry {
     string key;
@@ -109,7 +109,6 @@ void hash_table_print(hash_table table) {
 }
 
 void hash_table_test() {
-
     hash_table table = hash_table_alloc();
 
     hash_table_insert(&table, string_from_cstring("Hello"), 10);
@@ -124,8 +123,11 @@ void hash_table_test() {
     hash_table_insert(&table, string_from_cstring("bruh 2"), 1000);
     hash_table_insert(&table, string_from_cstring("bruh 3"), 2000);
     hash_table_insert(&table, string_from_cstring("bruh 4"), 40000);
+    found_it = hash_table_lookup(&table, string_from_cstring("bruh 4"), &res);
+    printf("Found it=%d Lookup: %u\n", found_it, res);
     hash_table_insert(&table, string_from_cstring("bruh 5"), 6969);
     hash_table_insert(&table, string_from_cstring("bruh 6"), 6767);
     hash_table_print(table);
 
+    hash_table_free(table);
 }
