@@ -5,11 +5,21 @@
 #include "pretty_print.c"
 // #include "typecheck.c"
 
+#include "hash_table.c"
+
 void print_expression(expression_node e);
 void print_leaves(infix_node* node);
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
+
+
+
+    hash_table_test();
+    return 123;
+
+
+
+    if (argc != 2) {
         panic("Usage: '%s <file>'", argv[0]);
     }
 
