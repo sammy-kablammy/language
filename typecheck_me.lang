@@ -1,0 +1,4 @@
+cond: bool = true
+x: int = 100
+y: int = x
+y = y + 1

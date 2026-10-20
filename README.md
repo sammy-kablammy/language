@@ -69,3 +69,5 @@ future
 - bytecode interpreter?? 👀😎
 - optimization
 - machine code output
+
+- [ ] defer keyword
