@@ -27,16 +27,6 @@ void pretty_print_expression(expression_node *expression) {
     }
 }
 
-void pretty_print_assignment(assignment_node assignment) {
-    print_string(assignment.identifier);
-    if (assignment.has_data_type) {
-        printf(": ");
-        print_string(assignment.data_type);
-    }
-    printf(" = ");
-    pretty_print_expression(assignment.expression);
-}
-
 void pretty_print_statement(statement_node *statement) {
     switch (statement->kind) {
         case DECLARATION:
