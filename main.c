@@ -3,9 +3,8 @@
 #include "lex.c"
 #include "parse.c"
 #include "pretty_print.c"
-// #include "typecheck.c"
-
 #include "hash_table.c"
+#include "typecheck.c"
 
 void print_expression(expression_node e);
 void print_leaves(infix_node* node);
@@ -46,14 +45,7 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    printf("\n🤔Typecheck🤔\n\n");
-    symbol_table global_symbols = symbol_table_create();
-    current_statement = first_statement;
-    while (current_statement != NULL) {
-        typecheck_statement(global_symbols, current_statement);
-        current_statement = current_statement->next;
-    }
-
+    typecheck_entire_program();
 
 	return 0;
 }

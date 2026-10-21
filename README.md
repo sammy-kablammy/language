@@ -69,5 +69,12 @@ future
 - bytecode interpreter?? 👀😎
 - optimization
 - machine code output
+- proper error handling
+  - unique exit codes per phase
+  - stdout/stderr distinction
+  - some notion of a string builder for error messages, possibly printf-like
+    with custom conversion codes for strings, enums, and so on
+  - systematic compilation failures. should be able to write negative tests like
+    "this program should fail to type check"
 
 - [ ] defer keyword
