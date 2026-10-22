@@ -66,9 +66,13 @@ string string_from_cstring(char *cstring) {
     };
 }
 
-__attribute__((noreturn)) void panic(const char *fmt, ...) {
+__attribute__((noreturn))
+__attribute__((format(printf, 1, 2)))
+void panic(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
+
+    fflush(stdout); // panic can sometimes beat stdout buffering
 
     fprintf(stderr, "[INTERNAL COMPILER ERROR]\n");
     vfprintf(stderr, fmt, args);

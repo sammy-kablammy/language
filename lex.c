@@ -42,6 +42,10 @@ token_array token_array_create() {
     };
 }
 
+// There's a lexer infinite loop somewhere here. Try to run the compiler on some
+// of our C files
+//
+// perhaps memcpy?
 void token_array_append(token_array *arr, token tok) {
     if (arr->length + 1 > arr->capacity) {
         arr->capacity = arr->capacity * 2 + 1;

@@ -13,8 +13,8 @@ int main(int argc, char **argv) {
 
 
 
-    hash_table_test();
-    return 123;
+    // hash_table_test();
+    // return 123;
 
 
 
@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    typecheck_entire_program();
+    typecheck_entire_program(first_statement);
 
 	return 0;
 }
