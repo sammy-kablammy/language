@@ -141,7 +141,6 @@ token_array lex_entire_file(string input) {
 								}
 							}
 							i += 1;
-							//printf("skipped character %c\n", input.buf[i]);
 						}
 						i += 1;
 						skip_spaces(input, &i);
