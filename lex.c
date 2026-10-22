@@ -50,6 +50,19 @@ void token_array_append(token_array *arr, token tok) {
     arr->length += 1;
 }
 
+void token_array_remove_last(token_array *arr) {
+	if (arr->length == 0) {
+		panic("attempted to remove from token array when it was empty\n");
+	}
+	arr->length -= 1;
+}
+
+void skip_spaces(string input, uint64_t *i) {
+	while (*i < input.length && input.buf[*i] == ' ') {
+		*i += 1;
+	}
+}
+
 bool is_keyword_character(char ch) {
     return (ch >= 'a' && ch <= 'z') ||
         (ch >= 'A' && ch <= 'Z') ||
@@ -104,12 +117,49 @@ token_array lex_entire_file(string input) {
         token tok = { 0 };
         char ch = input.buf[i];
         switch (ch) {
-            // All the single character tokens can be converted directly:
+			case TOKEN_SLASH: // dont fall through as we need to potentially move forward now not later
+				i += 1;
+				skip_spaces(input, &i);
+				if (i < input.length && input.buf[i] == TOKEN_SLASH) {
+					while (i < input.length && input.buf[i] != TOKEN_END_OF_LINE) {
+						i += 1;
+					}
+					ch = input.buf[i];
+					continue;
+				}
+				else if (i < input.length && input.buf[i] == TOKEN_STAR) {
+					i += 1;
+					bool end_of_multi_comment = false;
+					while (!end_of_multi_comment) {
+						while (i < input.length) {
+							if  (input.buf[i] == TOKEN_STAR) {
+								i += 1;
+								skip_spaces(input, &i);
+								if (input.buf[i] == TOKEN_SLASH) {
+									end_of_multi_comment = true;
+									break;
+								}
+							}
+							i += 1;
+							//printf("skipped character %c\n", input.buf[i]);
+						}
+						i += 1;
+						skip_spaces(input, &i);
+						if (i < input.length && input.buf[i] == TOKEN_SLASH) {
+							end_of_multi_comment = true;
+						}
+					}
+					i += 1;
+					continue;
+				}
+				// if we make it here, it isn't a comment
+				tok.kind = ch;
+				break;
+			// All the single character tokens can be converted directly:
+			case TOKEN_STAR: // fall through
             case TOKEN_ASSIGN: // fall through
             case TOKEN_PLUS: // fall through
             case TOKEN_MINUS: // fall through
-            case TOKEN_STAR: // fall through
-            case TOKEN_SLASH: // fall through
             case TOKEN_END_OF_LINE:
                 i += 1;
                 tok.kind = ch;
