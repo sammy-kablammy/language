@@ -24,7 +24,7 @@ for test_case_full_name in parser_test_cases/*.lang; do
         expected="$test_case_full_name"
     fi
 
-    ./compiler "$test_case_full_name" > "$got"
+    ./compiler --pretty-print-and-exit "$test_case_full_name" > "$got"
 
     if diff -q "$expected" "$got" 2>&1 >/dev/null; then
         printf "$GREEN$BOLD[ PASS ]$CLEAR $heading"

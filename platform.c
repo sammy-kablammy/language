@@ -25,6 +25,11 @@ void print_string(string str) {
     }
 }
 
+bool cstring_equals_cstring(char *s1, char *s2) {
+    // whatever
+    return strcmp(s1, s2) == 0;
+}
+
 bool string_equals_cstring(string s1, const char *s2) {
     for (uint64_t i = 0; i < s1.length && s2[i] != '\0'; i++) {
         if (s1.buf[i] != s2[i]) {
