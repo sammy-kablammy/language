@@ -105,7 +105,7 @@ data_type typecheck_expression(symbol_table *symbols, expression_node *expressio
 
 void typecheck_declaration(symbol_table *symbols, declaration_node declaration) {
     data_type lhs_type;
-    if (symbol_table_lookup(symbols, declaration.lhs, &lhs_type)) {
+    if (symbol_table_lookup(symbols, declaration.identifier, &lhs_type)) {
         // TODO(sam) likely ban same-scope shadowing but what about child<->parent scope shadowing?
         panic("shadowing is not supported (at least not currently)");
     }
@@ -120,7 +120,7 @@ void typecheck_declaration(symbol_table *symbols, declaration_node declaration) 
         panic("desired type (%d) does not match expression type (%d)", desired_type, expression_type);
     }
 
-    symbol_table_insert(symbols, declaration.lhs, desired_type);
+    symbol_table_insert(symbols, declaration.identifier, desired_type);
 }
 
 void typecheck_assignment(symbol_table *symbols, assignment_node assignment) {
