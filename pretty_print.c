@@ -30,7 +30,7 @@ void pretty_print_expression(expression_node *expression) {
 void pretty_print_statement(statement_node *statement) {
     switch (statement->kind) {
         case DECLARATION:
-            print_string(statement->value.declaration.lhs);
+            print_string(statement->value.declaration.identifier);
             printf(": ");
             print_string(statement->value.declaration.data_type);
             printf(" = ");

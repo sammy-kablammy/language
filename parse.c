@@ -31,7 +31,7 @@ struct infix_node {
 };
 
 typedef struct declaration_node {
-    string lhs;
+    string identifier;
     string data_type;
     expression_node *expression;
 } declaration_node;
@@ -148,7 +148,7 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
         return (statement_node){
             .kind = DECLARATION,
             .value.declaration = (declaration_node){
-                .lhs = lhs,
+                .identifier = lhs,
                 .data_type = data_type,
                 .expression = parse_expression(state, MIN_PREC),
             },
