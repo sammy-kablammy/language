@@ -29,8 +29,15 @@ void pretty_print_expression(expression_node *expression) {
 
 void pretty_print_statement(statement_node *statement) {
     switch (statement->kind) {
+        case DECLARATION:
+            print_string(statement->value.declaration.identifier);
+            printf(": ");
+            print_string(statement->value.declaration.data_type);
+            printf(" = ");
+            pretty_print_expression(statement->value.declaration.expression);
+            break;
         case ASSIGNMENT:
-            print_string(statement->value.assignment.identifier);
+            print_string(statement->value.assignment.lhs);
             printf(" = ");
             pretty_print_expression(statement->value.assignment.expression);
             break;

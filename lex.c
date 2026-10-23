@@ -10,6 +10,7 @@ typedef struct token {
         TOKEN_MINUS = '-',
         TOKEN_STAR = '*',
         TOKEN_SLASH = '/',
+        TOKEN_COLON = ':',
         TOKEN_END_OF_LINE = '\n',
         // multicharacter or non-ascii tokens start above the ascii range:
         TOKEN_IDENTIFIER = 128,
@@ -118,6 +119,7 @@ token_array lex_entire_file(string input) {
             case TOKEN_MINUS: // fall through
             case TOKEN_STAR: // fall through
             case TOKEN_SLASH: // fall through
+            case TOKEN_COLON: // fall through
             case TOKEN_END_OF_LINE:
                 i += 1;
                 tok.kind = ch;
