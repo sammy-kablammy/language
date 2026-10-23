@@ -13,14 +13,14 @@ int main(int argc, char **argv) {
     }
 
     // handle compiler testing arguments (intended for internal use only)
-    bool exit_after_pretty_print = false;
+    bool pretty_print_and_exit = false;
     int arg_idx = 1;
     while (arg_idx < argc - 1) {
         char *arg = argv[arg_idx];
         // Not all valid ASTs pass type checking. Allow parser test cases to
         // continue working even as later compiler phases are implemented
         if (cstring_equals_cstring(arg, "--pretty-print-and-exit")) {
-            exit_after_pretty_print = true;
+            pretty_print_and_exit = true;
         }
         arg_idx += 1;
     }
@@ -30,12 +30,12 @@ int main(int argc, char **argv) {
 
 	statement_node *first_statement = parse_entire_file(tokens);
 
-    statement_node *current_statement = first_statement;
-    while (current_statement != NULL) {
-        pretty_print_statement(current_statement);
-        current_statement = current_statement->next;
-    }
-    if (exit_after_pretty_print) {
+    if (pretty_print_and_exit) {
+        statement_node *current_statement = first_statement;
+        while (current_statement != NULL) {
+            pretty_print_statement(current_statement);
+            current_statement = current_statement->next;
+        }
         return 0;
     }
 
