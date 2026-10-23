@@ -57,12 +57,14 @@ struct expression_node {
         INFIX,
         INT,
         IDENTIFIER,
+        BOOL,
     } kind;
 
     union {
         int integer;
         string identifier;
         infix_node infix;
+        bool bool;
     } value;
 };
 
@@ -188,6 +190,14 @@ expression_node *parse_leaf(parser_state* state) {
 	else if (state->current_token.kind == TOKEN_IDENTIFIER) {
 		leaf->kind = IDENTIFIER;
 		leaf->value.identifier = state->current_token.value.identifier;
+	}
+	else if (state->current_token.kind == TOKEN_TRUE) {
+		leaf->kind = BOOL;
+		leaf->value.bool = true;
+	}
+	else if (state->current_token.kind == TOKEN_FALSE) {
+		leaf->kind = BOOL;
+		leaf->value.bool = false;
 	}
 	else {
 		panic("unrecognized token kind in parse_leaf, got=%d\n", state->current_token.kind);
