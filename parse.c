@@ -129,8 +129,6 @@ statement_node* parse_entire_file(token_array tokens) {
 }
 
 statement_node parse_declaration_or_assignment(parser_state *state) {
-    statement_node statement = { 0 };
-
     if (state->current_token.kind != TOKEN_IDENTIFIER) {
         panic("expected lhs of statement to be identifier, got=%d", state->current_token.kind);
     }
@@ -147,24 +145,26 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
             panic("Expected assignment token, got=%d", state->current_token.kind);
         }
         parser_advance(state);
-        statement.kind = DECLARATION;
-        statement.value.declaration = (declaration_node){
-            .lhs = lhs,
-            .data_type = data_type,
-            .expression = parse_expression(state, MIN_PREC),
+        return (statement_node){
+            .kind = DECLARATION,
+            .value.declaration = (declaration_node){
+                .lhs = lhs,
+                .data_type = data_type,
+                .expression = parse_expression(state, MIN_PREC),
+            },
         };
     } else if (state->current_token.kind == TOKEN_ASSIGN) {
         parser_advance(state);
-        statement.kind = ASSIGNMENT;
-        statement.value.assignment = (assignment_node){
-            .lhs = lhs,
-            .expression = parse_expression(state, MIN_PREC),
+        return (statement_node){
+            .kind = ASSIGNMENT,
+            .value.assignment = (assignment_node){
+                .lhs = lhs,
+                .expression = parse_expression(state, MIN_PREC),
+            },
         };
     } else {
         panic("Expected ':' or '=' in statement, got token kind=%d", state->current_token.kind);
     }
-
-    return statement;
 }
 
 statement_node *parse_statement(parser_state *state) {
