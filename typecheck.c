@@ -134,9 +134,10 @@ void typecheck_statement(symbol_table *symbols, statement_node *statement) {
 void typecheck_entire_program(statement_node *first_statement) {
     symbol_table global_symbols = symbol_table_alloc();
 
-    data_type next_available_type_id = 1; // Start at 1 as 0 represents TYPE_INVALID
+    // Start counting at 1, since 0 represents TYPE_INVALID
+    data_type next_available_type_id = 1;
 
-    for (data_type i = 0; i < NUM_BUILTIN_TYPES; i++) {
+    for (uint32_t i = 0; i < NUM_BUILTIN_TYPES; i++) {
         string builtin_type = string_from_cstring(builtin_types[i]);
         symbol_table_insert(&global_symbols, builtin_type, i + 1);
         next_available_type_id += 1;
