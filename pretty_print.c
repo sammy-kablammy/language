@@ -53,3 +53,10 @@ void pretty_print_statement(statement_node *statement) {
     }
     printf("\n");
 }
+
+void pretty_print_entire_file(statement_node *statement) {
+    while (statement != NULL) {
+        pretty_print_statement(statement);
+        statement = statement->next;
+    }
+}

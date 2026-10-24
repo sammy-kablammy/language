@@ -31,11 +31,7 @@ int main(int argc, char **argv) {
 	statement_node *first_statement = parse_entire_file(tokens);
 
     if (pretty_print_and_exit) {
-        statement_node *current_statement = first_statement;
-        while (current_statement != NULL) {
-            pretty_print_statement(current_statement);
-            current_statement = current_statement->next;
-        }
+        pretty_print_entire_file(first_statement);
         return 0;
     }
 
