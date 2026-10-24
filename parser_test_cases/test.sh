@@ -12,6 +12,8 @@ indent() {
     sed 's/^/ | /'
 }
 
+did_any_fail=''
+
 for test_case_full_name in parser_test_cases/*.lang; do
 
     heading="Test case $BLUE'$test_case_full_name'$CLEAR\n"
@@ -31,6 +33,11 @@ for test_case_full_name in parser_test_cases/*.lang; do
     else
         printf "$RED$BOLD[ FAIL ]$CLEAR $heading"
         diff --color=always "$expected" "$got" | indent
+        did_any_fail=yes
     fi
 
 done
+
+if [ -z $did_any_fail ]; then
+    exit 1
+else
