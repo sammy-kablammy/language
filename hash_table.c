@@ -100,7 +100,7 @@ void hash_table_print(hash_table table) {
     for (int i = 0; i < table.num_entries_allocated; i++) {
         hash_entry entry = table.entries[i];
         if (entry.is_used) {
-            printf("| value=%8u  key=\"", entry.value);
+            printf("| value=%4u | key=\"", entry.value);
             print_string(entry.key);
             printf("\"\n");
         }

@@ -3,6 +3,9 @@
 // able to do "x: int = (int)some_myint" but not "x: int = some_myint"
 // (casting syntax not finalized)
 
+// The convention in this file is that typecheck_*_expression functions will
+// return the type that they got. Unless they find a type error.
+
 // Symbol table maps identifiers to types.
 typedef struct symbol_table {
     struct symbol_table *parent;
@@ -12,7 +15,6 @@ typedef struct symbol_table {
 symbol_table symbol_table_alloc() {
     return (symbol_table){
         .parent = NULL,
-        // 💢grrrrr what is this, RAII? find a way to not do this
         .table = hash_table_alloc(),
     };
 }
@@ -22,29 +24,13 @@ void symbol_table_free(symbol_table symbols) {
 }
 
 typedef uint32_t data_type;
-// NOTE C99 apparently doesn't let you choose the size of an enum
-typedef enum {
-    // TODO(sam) meaningful zero value here?
-    TYPE_INVALID = 0,
-
-    // Primitive / builtin types go here
-    TYPE_INT = 1,
-    TYPE_BOOL,
-    // TYPE_FLOAT,
-    // TYPE_STRING,
-    // ...
-
-    // User defined data types start at the end and go up
-    USER_DEFINED_TYPE_START,
-} builtin_types;
-const uint32_t FIRST_BUILTIN_TYPE = 1;
-
-// keep this list in sync
-char *builtin_type_strings[] = {
-    "<invalidtype>",
+const data_type TYPE_INVALID = 0;
+char *builtin_types[] = {
     "int",
     "bool",
 };
+const uint32_t NUM_BUILTIN_TYPES = sizeof(builtin_types) / sizeof(builtin_types[0]);
+// User-defined types will counting after all the builtins
 
 data_type symbol_table_lookup(symbol_table *symbols, string identifier) {
     while (symbols != NULL) {
@@ -64,9 +50,6 @@ void symbol_table_insert(symbol_table *symbols, string identifier, data_type typ
     hash_table_insert(&symbols->table, identifier, type);
 }
 
-// The convention in this file is that typecheck_*_expression functions will
-// return the type that they got. Unless they find a type error.
-
 data_type typecheck_expression(symbol_table *symbols, expression_node *expression);
 
 data_type typecheck_infix_expression(symbol_table *symbols, infix_node infix) {
@@ -82,9 +65,9 @@ data_type typecheck_expression(symbol_table *symbols, expression_node *expressio
     data_type type;
     switch (expression->kind) {
         case INT:
-            return TYPE_INT;
+            return symbol_table_lookup(symbols, string_from_cstring("int"));
         case BOOL:
-            return TYPE_BOOL;
+            return symbol_table_lookup(symbols, string_from_cstring("bool"));
         case IDENTIFIER:
             type = symbol_table_lookup(symbols, expression->value.identifier);
             if (type != TYPE_INVALID) {
@@ -124,9 +107,6 @@ void typecheck_declaration(symbol_table *symbols, declaration_node declaration) 
 }
 
 void typecheck_assignment(symbol_table *symbols, assignment_node assignment) {
-
-    // TODO(sam) decide whether to do lookup(&data_type)->bool or drop the
-    // outparam and return a zero-valued DATA_TYPE_INVALID instead
     data_type lhs_type = symbol_table_lookup(symbols, assignment.lhs);
     if (lhs_type == TYPE_INVALID) {
         printf("\nlhs of identifier (\"");
@@ -157,16 +137,20 @@ void typecheck_statement(symbol_table *symbols, statement_node *statement) {
 void typecheck_entire_program(statement_node *first_statement) {
     symbol_table global_symbols = symbol_table_alloc();
 
-    for (uint32_t builtin_type = FIRST_BUILTIN_TYPE; builtin_type < USER_DEFINED_TYPE_START; builtin_type++) {
-        string builtin_type_string = string_from_cstring(builtin_type_strings[builtin_type]);
-        symbol_table_insert(&global_symbols, builtin_type_string, builtin_type);
+    data_type next_available_type_id = 1; // Start at 1 as 0 represents TYPE_INVALID
 
-        // data_type unused;
-        // bool res = symbol_table_lookup(&global_symbols, builtin_type_string, &unused);
-        // printf("res=%d\n", res);
+    for (data_type i = 0; i < NUM_BUILTIN_TYPES; i++) {
+        printf("Inserting %d %s\n", i, builtin_types[i]);
+        string builtin_type = string_from_cstring(builtin_types[i]);
+        printf("SAM: '");
+        print_string(builtin_type);
+        printf("'\n");
+        symbol_table_insert(&global_symbols, builtin_type, i + 1);
+        next_available_type_id += 1;
     }
-
-    // first_statement = first_statement;
+    printf("builtins:\n");
+    hash_table_print(global_symbols.table);
+    printf("...builtins\n");
 
     statement_node *current_statement = first_statement;
     while (current_statement != NULL) {
@@ -174,4 +158,6 @@ void typecheck_entire_program(statement_node *first_statement) {
         current_statement = current_statement->next;
     }
 
+    hash_table_print(global_symbols.table);
+    symbol_table_free(global_symbols);
 }
