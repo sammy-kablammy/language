@@ -20,7 +20,6 @@ void parser_eat_newlines(parser_state *state) {
     }
 }
 
-typedef struct assignment_node assignment_node;
 typedef struct statement_node statement_node;
 typedef struct expression_node expression_node;
 typedef struct infix_node infix_node;
@@ -31,18 +30,26 @@ struct infix_node {
     token operator;
 };
 
-struct assignment_node {
-	string identifier;
+typedef struct declaration_node {
+    string identifier;
+    string data_type;
+    expression_node *expression;
+} declaration_node;
+
+typedef struct assignment_node {
+	string lhs;
 	expression_node *expression;
-};
+} assignment_node;
 
 struct statement_node {
     enum {
+        DECLARATION,
         ASSIGNMENT,
         RETURN,
     } kind;
 
     union {
+        declaration_node declaration;
         assignment_node assignment;
         // This one's a pointer because a return statement may or may not have
         // an expression with it. NULL pointer represents plain return.
@@ -57,12 +64,14 @@ struct expression_node {
         INFIX,
         INT,
         IDENTIFIER,
+        BOOL,
     } kind;
 
     union {
         int integer;
         string identifier;
         infix_node infix;
+        bool bool;
     } value;
 };
 
@@ -122,20 +131,43 @@ statement_node* parse_entire_file(token_array tokens) {
 	return first_statement;
 }
 
-assignment_node parse_assignment(parser_state* state) {
+statement_node parse_declaration_or_assignment(parser_state *state) {
     if (state->current_token.kind != TOKEN_IDENTIFIER) {
-        panic("parse_assignment currently expects left side of '=' to be an identifier");
+        panic("expected lhs of statement to be identifier, got=%d", state->current_token.kind);
     }
-    assignment_node assignment = { 0 };
-	assignment.identifier = state->current_token.value.identifier;
+    string lhs = state->current_token.value.identifier;
     parser_advance(state);
-	if (state->current_token.kind != TOKEN_ASSIGN) {
-		print_token(state->current_token);
-		panic(" receieved, expected operator instead");
-	}
-    parser_advance(state);
-	assignment.expression = parse_expression(state, MIN_PREC);
-	return assignment;
+    if (state->current_token.kind == TOKEN_COLON) {
+        parser_advance(state);
+        if (state->current_token.kind != TOKEN_IDENTIFIER) {
+            panic("expected declaration data type to be identifier, got=%d", state->current_token.kind);
+        }
+        string data_type = state->current_token.value.identifier;
+        parser_advance(state);
+        if (state->current_token.kind != TOKEN_ASSIGN) {
+            panic("Expected assignment token, got=%d", state->current_token.kind);
+        }
+        parser_advance(state);
+        return (statement_node){
+            .kind = DECLARATION,
+            .value.declaration = (declaration_node){
+                .identifier = lhs,
+                .data_type = data_type,
+                .expression = parse_expression(state, MIN_PREC),
+            },
+        };
+    } else if (state->current_token.kind == TOKEN_ASSIGN) {
+        parser_advance(state);
+        return (statement_node){
+            .kind = ASSIGNMENT,
+            .value.assignment = (assignment_node){
+                .lhs = lhs,
+                .expression = parse_expression(state, MIN_PREC),
+            },
+        };
+    } else {
+        panic("Expected ':' or '=' in statement, got token kind=%d", state->current_token.kind);
+    }
 }
 
 statement_node *parse_statement(parser_state *state) {
@@ -151,8 +183,7 @@ statement_node *parse_statement(parser_state *state) {
             }
             break;
         case TOKEN_IDENTIFIER:
-            stmt->kind = ASSIGNMENT;
-            stmt->value.assignment = parse_assignment(state);
+            *stmt = parse_declaration_or_assignment(state);
             break;
         default:
             panic("Unrecognized token kind (%d) in parse_statement", state->current_token.kind);
@@ -191,6 +222,14 @@ expression_node *parse_leaf(parser_state* state) {
 	else if (state->current_token.kind == TOKEN_IDENTIFIER) {
 		leaf->kind = IDENTIFIER;
 		leaf->value.identifier = state->current_token.value.identifier;
+	}
+	else if (state->current_token.kind == TOKEN_TRUE) {
+		leaf->kind = BOOL;
+		leaf->value.bool = true;
+	}
+	else if (state->current_token.kind == TOKEN_FALSE) {
+		leaf->kind = BOOL;
+		leaf->value.bool = false;
 	}
 	else {
 		panic("unrecognized token kind in parse_leaf, got=%d\n", state->current_token.kind);

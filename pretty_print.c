@@ -13,13 +13,31 @@ void pretty_print_expression(expression_node *expression) {
         case IDENTIFIER:
             print_string(expression->value.identifier);
             break;
+        case BOOL:
+            if (expression->value.bool == true) {
+                printf("true");
+            } else if (expression->value.bool == false) {
+                printf("false");
+            } else {
+                panic("Somehow a bool expression got a nonboolean value");
+            }
+            break;
+        default:
+            panic("unhandled expression kind (%d) to print", expression->kind);
     }
 }
 
 void pretty_print_statement(statement_node *statement) {
     switch (statement->kind) {
+        case DECLARATION:
+            print_string(statement->value.declaration.identifier);
+            printf(": ");
+            print_string(statement->value.declaration.data_type);
+            printf(" = ");
+            pretty_print_expression(statement->value.declaration.expression);
+            break;
         case ASSIGNMENT:
-            print_string(statement->value.assignment.identifier);
+            print_string(statement->value.assignment.lhs);
             printf(" = ");
             pretty_print_expression(statement->value.assignment.expression);
             break;
