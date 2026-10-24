@@ -44,9 +44,6 @@ data_type symbol_table_lookup(symbol_table *symbols, string identifier) {
 }
 
 void symbol_table_insert(symbol_table *symbols, string identifier, data_type type) {
-    printf("symbol table insert: '");
-    print_string(identifier);
-    printf("' data type id=%d\n", type);
     hash_table_insert(&symbols->table, identifier, type);
 }
 
@@ -140,17 +137,10 @@ void typecheck_entire_program(statement_node *first_statement) {
     data_type next_available_type_id = 1; // Start at 1 as 0 represents TYPE_INVALID
 
     for (data_type i = 0; i < NUM_BUILTIN_TYPES; i++) {
-        printf("Inserting %d %s\n", i, builtin_types[i]);
         string builtin_type = string_from_cstring(builtin_types[i]);
-        printf("SAM: '");
-        print_string(builtin_type);
-        printf("'\n");
         symbol_table_insert(&global_symbols, builtin_type, i + 1);
         next_available_type_id += 1;
     }
-    printf("builtins:\n");
-    hash_table_print(global_symbols.table);
-    printf("...builtins\n");
 
     statement_node *current_statement = first_statement;
     while (current_statement != NULL) {
@@ -159,5 +149,6 @@ void typecheck_entire_program(statement_node *first_statement) {
     }
 
     hash_table_print(global_symbols.table);
+
     symbol_table_free(global_symbols);
 }
