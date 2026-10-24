@@ -40,22 +40,21 @@ typedef enum {
 const uint32_t FIRST_BUILTIN_TYPE = 1;
 
 // keep this list in sync
-char * builtin_type_strings[] = {
+char *builtin_type_strings[] = {
     "<invalidtype>",
     "int",
     "bool",
 };
 
-// Still unsure whether to use a bool + outparam, or to only use a data_type
-// with a meaningful zero value
-bool symbol_table_lookup(symbol_table *symbols, string identifier, data_type *out) {
+data_type symbol_table_lookup(symbol_table *symbols, string identifier) {
     while (symbols != NULL) {
-        if (hash_table_lookup(&symbols->table, identifier, out)) {
-            return true;
+        data_type out;
+        if (hash_table_lookup(&symbols->table, identifier, &out)) {
+            return out;
         }
         symbols = symbols->parent;
     }
-    return false;
+    return TYPE_INVALID;
 }
 
 void symbol_table_insert(symbol_table *symbols, string identifier, data_type type) {
@@ -80,15 +79,16 @@ data_type typecheck_infix_expression(symbol_table *symbols, infix_node infix) {
 }
 
 data_type typecheck_expression(symbol_table *symbols, expression_node *expression) {
-    data_type out;
+    data_type type;
     switch (expression->kind) {
         case INT:
             return TYPE_INT;
         case BOOL:
             return TYPE_BOOL;
         case IDENTIFIER:
-            if (symbol_table_lookup(symbols, expression->value.identifier, &out)) {
-                return out;
+            type = symbol_table_lookup(symbols, expression->value.identifier);
+            if (type != TYPE_INVALID) {
+                return type;
             } else {
                 printf("Could not find type of (\"");
                 printf("\") in scope");
@@ -104,14 +104,14 @@ data_type typecheck_expression(symbol_table *symbols, expression_node *expressio
 }
 
 void typecheck_declaration(symbol_table *symbols, declaration_node declaration) {
-    data_type lhs_type;
-    if (symbol_table_lookup(symbols, declaration.identifier, &lhs_type)) {
+    data_type lhs_type = symbol_table_lookup(symbols, declaration.identifier);
+    if (lhs_type != TYPE_INVALID) {
         // TODO(sam) likely ban same-scope shadowing but what about child<->parent scope shadowing?
         panic("shadowing is not supported (at least not currently)");
     }
 
-    data_type desired_type;
-    if (!symbol_table_lookup(symbols, declaration.data_type, &desired_type)) {
+    data_type desired_type = symbol_table_lookup(symbols, declaration.data_type);
+    if (desired_type == TYPE_INVALID) {
         print_string(declaration.data_type);
         panic("attempted to use unknown type in declaration");
     }
@@ -127,8 +127,8 @@ void typecheck_assignment(symbol_table *symbols, assignment_node assignment) {
 
     // TODO(sam) decide whether to do lookup(&data_type)->bool or drop the
     // outparam and return a zero-valued DATA_TYPE_INVALID instead
-    data_type lhs_type;
-    if (!symbol_table_lookup(symbols, assignment.lhs, &lhs_type)) {
+    data_type lhs_type = symbol_table_lookup(symbols, assignment.lhs);
+    if (lhs_type == TYPE_INVALID) {
         printf("\nlhs of identifier (\"");
         print_string(assignment.lhs);
         printf("\") not found in current or parent scope\n");
