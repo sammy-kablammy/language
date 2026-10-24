@@ -1,5 +1,5 @@
-// Really dumb string-to-int hash table. Good enough for now; implementation can
-// be swapped out easily enough.
+// Really dumb string-to-int hash table. Terrible hash function linear probing,
+// but can be swapped out later.
 
 const int HASH_TABLE_INITIAL_ELEMENTS = 8;
 
@@ -24,9 +24,9 @@ int hash(string key) {
     return result;
 }
 
-void _hash_table_expand_if_necessary(hash_table *table);
+void hash_table_expand_if_necessary(hash_table *table);
 
-// must call hash_table_free, unfortunately
+// Remember to call hash_table_free
 hash_table hash_table_alloc() {
     return (hash_table){
         .num_entries_allocated = HASH_TABLE_INITIAL_ELEMENTS,
@@ -37,7 +37,6 @@ hash_table hash_table_alloc() {
 
 void hash_table_insert(hash_table *table, string key, uint32_t value) {
     int position = hash(key) % table->num_entries_allocated;
-    // (linear probe)
     while (table->entries[position].is_used) {
         if (string_equals(key, table->entries[position].key)) {
             // Found existing; update instead of insert
@@ -53,13 +52,12 @@ void hash_table_insert(hash_table *table, string key, uint32_t value) {
         .value = value,
     };
     table->num_entries_used += 1;
-    _hash_table_expand_if_necessary(table);
+    hash_table_expand_if_necessary(table);
 }
 
-// Return whether key is in table, possibly storing its value in 'out'
+// Return whether 'key' is in table, possibly storing its value in 'out'
 bool hash_table_lookup(hash_table *table, string key, uint32_t *out) {
     int position = hash(key) % table->num_entries_allocated;
-    // (linear probe)
     while (table->entries[position].is_used) {
         hash_entry entry = table->entries[position];
         if (string_equals(key, entry.key)) {
@@ -72,8 +70,8 @@ bool hash_table_lookup(hash_table *table, string key, uint32_t *out) {
     return false;
 }
 
-// this function is "private" to this file
-void _hash_table_expand_if_necessary(hash_table *table) {
+// (don't need to call this outside of this file)
+void hash_table_expand_if_necessary(hash_table *table) {
     if (table->num_entries_used < table->num_entries_allocated / 2) {
         return;
     }
