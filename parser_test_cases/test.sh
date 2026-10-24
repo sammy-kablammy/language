@@ -40,4 +40,4 @@ done
 
 if [ -z $did_any_fail ]; then
     exit 1
-else
+fi
