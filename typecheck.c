@@ -49,6 +49,7 @@ void symbol_table_insert(symbol_table *symbols, string identifier, data_type typ
 
 data_type typecheck_expression(symbol_table *symbols, expression_node *expression);
 
+// TODO: ensure operator matches types. for example '123 * true' should cause a type error
 data_type typecheck_infix_expression(symbol_table *symbols, infix_node infix) {
     data_type lhs_type = typecheck_expression(symbols, infix.left);
     data_type rhs_type = typecheck_expression(symbols, infix.right);
