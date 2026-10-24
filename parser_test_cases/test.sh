@@ -38,6 +38,6 @@ for test_case_full_name in parser_test_cases/*.lang; do
 
 done
 
-if [ -n $did_any_fail ]; then
+if [ -n "$did_any_fail" ]; then
     exit 1
 fi
