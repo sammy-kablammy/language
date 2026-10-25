@@ -8,8 +8,6 @@ BLUE="\e[34m"
 BOLD="\e[1m"
 CLEAR="\e[0m"
 
-printf "$BLUE$BOLD#################### Parser test cases ####################$CLEAR\n"
-
 indent() {
     sed 's/^/ | /'
 }
