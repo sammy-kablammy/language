@@ -37,7 +37,7 @@ for test_case_full_name in typecheck_test_cases/*.lang; do
         printf "$RED$BOLD[ FAIL ]$CLEAR Typecheck rejected a valid program $heading"
         did_any_fail=yes
     elif [ "$exit_code" -ne 0 ] && [ "$expected_exit_code" -ne 0 ]; then
-        printf "$GREEN$BOLD[ PASS ]$CLEAR Typechecker fails an invalid program $heading"
+        printf "$GREEN$BOLD[ PASS ]$CLEAR Typechecker rejects an invalid program $heading"
     elif diff -q "$expected_file" "$got" >/dev/null 2>&1; then
         printf "$GREEN$BOLD[ PASS ]$CLEAR Output matches expected $heading"
     else
