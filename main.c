@@ -49,9 +49,10 @@ int main(int argc, char **argv) {
     }
 
     symbol_table global_symbols = symbol_table_alloc();
-    typecheck_entire_program(global_symbols, first_statement);
+    typecheck_entire_program(&global_symbols, first_statement);
     if (typecheck_and_exit) {
-        print_symbol_table(global_symbols);
+        print_symbol_table(&global_symbols);
+        symbol_table_free(global_symbols);
         return 0;
     }
     symbol_table_free(global_symbols);

@@ -17,9 +17,10 @@ void symbol_table_free(symbol_table symbols) {
 
 typedef uint32_t data_type;
 const data_type TYPE_INVALID = 0;
-char *builtin_types[] = {
-    "int",
-    "bool",
+string builtin_types[] = {
+    // I don't like this but eh
+    { .buf = "int", .length = sizeof("int") - 1 },
+    { .buf = "bool", .length = sizeof("bool") - 1 },
 };
 const uint32_t NUM_BUILTIN_TYPES = sizeof(builtin_types) / sizeof(builtin_types[0]);
 // User-defined types will counting after all the builtins
@@ -124,23 +125,22 @@ void typecheck_statement(symbol_table *symbols, statement_node *statement) {
     }
 }
 
-void typecheck_entire_program(symbol_table global_symbols, statement_node *first_statement) {
+void typecheck_entire_program(symbol_table *global_symbols, statement_node *first_statement) {
     // Start counting types at 1, since 0 represents TYPE_INVALID
     data_type next_available_type_id = 1;
 
     for (uint32_t i = 0; i < NUM_BUILTIN_TYPES; i++) {
-        string builtin_type = string_from_cstring(builtin_types[i]);
-        symbol_table_insert(&global_symbols, builtin_type, i + 1);
+        symbol_table_insert(global_symbols, builtin_types[i], i + 1);
         next_available_type_id += 1;
     }
 
     statement_node *current_statement = first_statement;
     while (current_statement != NULL) {
-        typecheck_statement(&global_symbols, current_statement);
+        typecheck_statement(global_symbols, current_statement);
         current_statement = current_statement->next;
     }
 }
 
-void print_symbol_table(symbol_table symbols) {
-    hash_table_print(symbols.table);
+void print_symbol_table(symbol_table *symbols) {
+    hash_table_print(symbols->table);
 }
