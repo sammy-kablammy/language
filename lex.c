@@ -42,10 +42,6 @@ token_array token_array_create() {
     };
 }
 
-// There's a lexer infinite loop somewhere here. Try to run the compiler on some
-// of our C files
-//
-// perhaps memcpy?
 void token_array_append(token_array *arr, token tok) {
     if (arr->length + 1 > arr->capacity) {
         arr->capacity = arr->capacity * 2 + 1;
@@ -105,6 +101,9 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
     }
     // Other keywords go here
 
+    if (identifier.length == 0) {
+        panic("Expected identifier or keyword, got unrecognized character '%c'", input.buf[*i]);
+    }
     return (token){
         .kind = TOKEN_IDENTIFIER,
         .value.identifier = identifier,
