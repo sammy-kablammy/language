@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
 
     // handle compiler testing arguments (intended for internal use only)
     bool pretty_print_and_exit = false;
+    bool typecheck_and_exit = false;
     int arg_idx = 1;
     while (arg_idx < argc - 1) {
         char *arg = argv[arg_idx];
@@ -31,6 +32,8 @@ int main(int argc, char **argv) {
         // continue working even as later compiler phases are implemented
         if (cstring_equals_cstring(arg, "--pretty-print-and-exit")) {
             pretty_print_and_exit = true;
+        } else if (cstring_equals_cstring(arg, "--typecheck-and-exit")) {
+            typecheck_and_exit = true;
         }
         arg_idx += 1;
     }
@@ -45,7 +48,13 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    typecheck_entire_program(first_statement);
+    symbol_table global_symbols = symbol_table_alloc();
+    typecheck_entire_program(global_symbols, first_statement);
+    if (typecheck_and_exit) {
+        print_symbol_table(global_symbols);
+        return 0;
+    }
+    symbol_table_free(global_symbols);
 
 	return 0;
 }

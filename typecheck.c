@@ -124,10 +124,8 @@ void typecheck_statement(symbol_table *symbols, statement_node *statement) {
     }
 }
 
-void typecheck_entire_program(statement_node *first_statement) {
-    symbol_table global_symbols = symbol_table_alloc();
-
-    // Start counting at 1, since 0 represents TYPE_INVALID
+void typecheck_entire_program(symbol_table global_symbols, statement_node *first_statement) {
+    // Start counting types at 1, since 0 represents TYPE_INVALID
     data_type next_available_type_id = 1;
 
     for (uint32_t i = 0; i < NUM_BUILTIN_TYPES; i++) {
@@ -141,8 +139,8 @@ void typecheck_entire_program(statement_node *first_statement) {
         typecheck_statement(&global_symbols, current_statement);
         current_statement = current_statement->next;
     }
+}
 
-    hash_table_print(global_symbols.table);
-
-    symbol_table_free(global_symbols);
+void print_symbol_table(symbol_table symbols) {
+    hash_table_print(symbols.table);
 }
