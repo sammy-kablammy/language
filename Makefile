@@ -12,3 +12,4 @@ test: main
 clean:
 	rm $(OUT)
 	rm ./parser_test_cases/*.got
+	rm ./typecheck_test_cases/*.got
