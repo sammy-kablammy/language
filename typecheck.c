@@ -1,12 +1,4 @@
-// There is a notion of type *equality* (these types are literally the same) and
-// type *castability* (for example if i do "myint: type = int" i should then be
-// able to do "x: int = (int)some_myint" but not "x: int = some_myint"
-// (casting syntax not finalized)
-
-// The convention in this file is that typecheck_*_expression functions will
-// return the type that they got. Unless they find a type error.
-
-// Symbol table maps identifiers to types.
+// Symbol table maps identifiers to types for a given scope
 typedef struct symbol_table {
     struct symbol_table *parent;
     hash_table table;
@@ -87,7 +79,7 @@ data_type typecheck_expression(symbol_table *symbols, expression_node *expressio
 void typecheck_declaration(symbol_table *symbols, declaration_node declaration) {
     data_type lhs_type = symbol_table_lookup(symbols, declaration.identifier);
     if (lhs_type != TYPE_INVALID) {
-        // TODO(sam) likely ban same-scope shadowing but what about child<->parent scope shadowing?
+        // TODO consider child<->parent scope shadowing (same-scope shadowing likely banned)
         panic("shadowing is not supported (at least not currently)");
     }
 
