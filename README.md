@@ -76,5 +76,3 @@ future
     with custom conversion codes for strings, enums, and so on
   - systematic compilation failures. should be able to write negative tests like
     "this program should fail to type check"
-
-- [ ] defer keyword
