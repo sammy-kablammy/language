@@ -1,0 +1,6 @@
+================= HASH TABLE =================
+| value=   1 | key="two"
+| value=   1 | key="int"
+| value=   2 | key="bool"
+| value=   1 | key="result"
+=============== END HASH TABLE ===============

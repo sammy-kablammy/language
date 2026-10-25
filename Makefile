@@ -5,7 +5,9 @@ main: main.c
 	$(C_COMPILER) -o $(OUT) main.c
 
 test: main
-	./parser_test_cases/test.sh
+	@./parser_test_cases/test.sh
+	@echo ""
+	@./typecheck_test_cases/test.sh
 
 clean:
 	rm $(OUT)
