@@ -56,7 +56,7 @@ language features to parse:
 typechecking phase:
 - [X] add builtin type (say bool), so there are at least two types to work with
 - [X] typed declarations `a = b` vs `a: int = b`
-- [ ] basic "does LHS match RHS"
+- [X] basic "does LHS match RHS"
 - [ ] figure out numeric types. signed vs unsigned, floats. see go's untyped
   integer literals and zig's `comptime_int` for reference
 - [ ] string literals
