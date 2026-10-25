@@ -18,7 +18,7 @@ did_any_fail=''
 
 for test_case_full_name in typecheck_test_cases/*.lang; do
 
-    heading="Test case $BLUE'$test_case_full_name'$CLEAR\n"
+    heading="$BLUE'$test_case_full_name'$CLEAR\n"
     test_case_basename=$(basename "$test_case_full_name" '.lang')
     got="typecheck_test_cases/$test_case_basename.got"
 
@@ -33,17 +33,17 @@ for test_case_full_name in typecheck_test_cases/*.lang; do
     exit_code=$?
 
     if [ "$exit_code" -eq 0 ] && [ "$expected_exit_code" -ne 0 ]; then
-        printf "$RED$BOLD[ FAIL Typecheck accepted an invalid program ]$CLEAR $heading"
+        printf "$RED$BOLD[ FAIL ]$CLEAR Typecheck accepted an invalid program $heading"
         did_any_fail=yes
     elif [ "$exit_code" -ne 0 ] && [ "$expected_exit_code" -eq 0 ]; then
-        printf "$RED$BOLD[ FAIL Typecheck rejected a valid program ]$CLEAR $heading"
+        printf "$RED$BOLD[ FAIL ]$CLEAR Typecheck rejected a valid program $heading"
         did_any_fail=yes
     elif [ "$exit_code" -ne 0 ] && [ "$expected_exit_code" -ne 0 ]; then
-        printf "$GREEN$BOLD[ PASS Typechecker fails an invalid program ]$CLEAR $heading"
+        printf "$GREEN$BOLD[ PASS ]$CLEAR Typechecker fails an invalid program $heading"
     elif diff -q "$expected_file" "$got" >/dev/null 2>&1; then
-        printf "$GREEN$BOLD[ PASS Output matches expected ]$CLEAR $heading"
+        printf "$GREEN$BOLD[ PASS ]$CLEAR Output matches expected $heading"
     else
-        printf "$RED$BOLD[ FAIL Output doesn't match expected ]$CLEAR $heading"
+        printf "$RED$BOLD[ FAIL ]$CLEAR Output doesn't match expected $heading"
         diff --color=always "$expected_file" "$got" | indent
         did_any_fail=yes
     fi
