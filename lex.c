@@ -113,18 +113,18 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
     };
 }
 
-void skip_until(string input, int64_t *i, char token) {
-	while (input.buf[i] != token) {
-		if (i >= input.length) {
+void skip_until(string input, uint64_t *i, char token) {
+	while (input.buf[*i] != token) {
+		if (*i >= input.length) {
 			panic("EOF reached while attempting to parse comment.\n");
 		}
 		*i += 1;
 	}
 }
 
-void skip_spaces(string input, int64_t *i) {
+void skip_spaces(string input, uint64_t *i) {
 	while (input.buf[*i] == ' ' || input.buf[*i] == '\t') {
-		if (i >= input.length) {
+		if (*i >= input.length) {
 			// realistically this can totally happen in a valid file, where they just have spaces at the end of their file.
 			// optionally warn them to that they have whitespace at the end of the file. but is that our job as the compiler.. hm.
 			// if we want to talk about all these toolchains that are produced and how annoying it is to have to use 3 different
@@ -138,12 +138,13 @@ void skip_spaces(string input, int64_t *i) {
 token_array lex_entire_file(string input) {
     token_array tokens = token_array_create();
     uint64_t i = 0;
+	int multiline_openers = 0;
     while (i < input.length) {
         token tok = { 0 };
         char ch = input.buf[i];
         switch (ch) {
 			case TOKEN_SLASH:
-				int multiline_openers = 0;
+				multiline_openers = 0;
 				i += 1;
 				if (i >= input.length) {
 					panic("EOF reached while attempting to parse comment\n");
@@ -151,7 +152,7 @@ token_array lex_entire_file(string input) {
 				else { /* do nothing */ }
 				
 				if (input.buf[i] == TOKEN_SLASH) { // a single line comment
-					skip_until(string, &i, TOKEN_END_OF_LINE);
+					skip_until(input, &i, TOKEN_END_OF_LINE);
 					ch = input.buf[i];
 					continue;
 				}
@@ -170,7 +171,7 @@ token_array lex_entire_file(string input) {
 								panic("EOF reached while parsing multi-line comment.\n");
 							}
 							else if (input.buf[i] == TOKEN_SLASH) { // a nested single line comment
-								skip_until(string, &i, TOKEN_END_OF_LINE);
+								skip_until(input, &i, TOKEN_END_OF_LINE);
 							}
 							else if (input.buf[i] == TOKEN_STAR) { // a nested multi line comment
 								multiline_openers += 1;
@@ -205,7 +206,6 @@ token_array lex_entire_file(string input) {
             case TOKEN_ASSIGN: // fall through
             case TOKEN_PLUS: // fall through
             case TOKEN_MINUS: // fall through
-            case TOKEN_STAR: // fall through
             case TOKEN_COLON: // fall through
             case TOKEN_END_OF_LINE:
                 i += 1;
