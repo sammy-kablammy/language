@@ -121,8 +121,8 @@ statement_node* parse_entire_file(token_array tokens) {
     statement_node *current_statement = first_statement;
 	while (state.pos < state.tokens.length) {
 		current_statement->next = parse_statement(&state);
+		parser_eat_newlines(&state);
 		current_statement = current_statement->next;
-        parser_eat_newlines(&state);
 	}
 	return first_statement;
 }
