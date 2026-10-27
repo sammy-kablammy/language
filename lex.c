@@ -140,7 +140,7 @@ token_array lex_entire_file(string input) {
 				multiline_openers = 0;
 				i += 1;
 				if (i >= input.length) {
-					panic("EOF reached while attempting to parse comment\n");
+					panic("EOF reached while attempting to parsing\n");
 				}
 				else { /* do nothing */ }
 				
