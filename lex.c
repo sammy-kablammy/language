@@ -193,7 +193,7 @@ token_array lex_entire_file(string input) {
 				else { // not a comment
 					tok.kind = ch;
 					break;
-				}	
+				}
 			// All the single character tokens can be converted directly:
 			case TOKEN_STAR: // fall through
             case TOKEN_ASSIGN: // fall through
@@ -219,7 +219,6 @@ token_array lex_entire_file(string input) {
 			case ' ': // fall through
 			case '\t':
 				skip_spaces(input, &i);
-				i += 1;
 				continue;
             default:
                 tok = lex_identifier_or_keyword(input, &i);
