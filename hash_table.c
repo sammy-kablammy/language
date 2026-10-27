@@ -105,27 +105,3 @@ void hash_table_print(hash_table table) {
     }
     printf("=============== END HASH TABLE ===============\n");
 }
-
-void hash_table_test() {
-    hash_table table = hash_table_alloc();
-
-    hash_table_insert(&table, string_from_cstring("Hello"), 10);
-    hash_table_insert(&table, string_from_cstring("Sam"), 25);
-    hash_table_insert(&table, string_from_cstring("sammykablammy"), 42);
-    uint32_t res;
-    bool found_it = hash_table_lookup(&table, string_from_cstring("Sam"), &res);
-    printf("Found it=%d Lookup: %u\n", found_it, res);
-    found_it = hash_table_lookup(&table, string_from_cstring("Hello2"), &res);
-    printf("Found it=%d Lookup: %u\n", found_it, res);
-    hash_table_insert(&table, string_from_cstring("bruh 1"), 123);
-    hash_table_insert(&table, string_from_cstring("bruh 2"), 1000);
-    hash_table_insert(&table, string_from_cstring("bruh 3"), 2000);
-    hash_table_insert(&table, string_from_cstring("bruh 4"), 40000);
-    found_it = hash_table_lookup(&table, string_from_cstring("bruh 4"), &res);
-    printf("Found it=%d Lookup: %u\n", found_it, res);
-    hash_table_insert(&table, string_from_cstring("bruh 5"), 6969);
-    hash_table_insert(&table, string_from_cstring("bruh 6"), 6767);
-    hash_table_print(table);
-
-    hash_table_free(table);
-}
