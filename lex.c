@@ -10,11 +10,14 @@ typedef struct token {
         TOKEN_MINUS = '-',
         TOKEN_STAR = '*',
         TOKEN_SLASH = '/',
+        TOKEN_COLON = ':',
         TOKEN_END_OF_LINE = '\n',
         // multicharacter or non-ascii tokens start above the ascii range:
         TOKEN_IDENTIFIER = 128,
         TOKEN_INTEGER,
         TOKEN_RETURN,
+        TOKEN_TRUE,
+        TOKEN_FALSE,
     } kind;
     union {
         string identifier; // Only used for identifiers
@@ -95,6 +98,12 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
 
     if (string_equals_cstring(identifier, "return")) {
         return (token){ .kind = TOKEN_RETURN };
+    }
+    if (string_equals_cstring(identifier, "true")) {
+        return (token){ .kind = TOKEN_TRUE };
+    }
+    if (string_equals_cstring(identifier, "false")) {
+        return (token){ .kind = TOKEN_FALSE };
     }
     // Other keywords go here
 
@@ -196,6 +205,8 @@ token_array lex_entire_file(string input) {
             case TOKEN_ASSIGN: // fall through
             case TOKEN_PLUS: // fall through
             case TOKEN_MINUS: // fall through
+            case TOKEN_STAR: // fall through
+            case TOKEN_COLON: // fall through
             case TOKEN_END_OF_LINE:
                 i += 1;
                 tok.kind = ch;
