@@ -114,28 +114,14 @@ statement_node* parse_entire_file(token_array tokens) {
 
     statement_node *first_statement = NULL;
 	if (state.pos < state.tokens.length) {
-		switch (state.current_token.kind) {
-			case TOKEN_RETURN: // fall through
-			case TOKEN_IDENTIFIER:
-				first_statement = parse_statement(&state);
-				break;
-			default:
-				panic("uncaught syntax at token %ld\n", state.pos);
-		}
+		first_statement = parse_statement(&state);
         parser_eat_newlines(&state);
     }
 
     statement_node *current_statement = first_statement;
 	while (state.pos < state.tokens.length) {
-        switch (state.current_token.kind) {
-			case TOKEN_RETURN: // fall through
-			case TOKEN_IDENTIFIER:
-				current_statement->next = parse_statement(&state);
-				current_statement = current_statement->next;
-				break;
-			default:
-				panic("uncaught syntax at token %ld\n", state.pos);
-		}
+		current_statement->next = parse_statement(&state);
+		current_statement = current_statement->next;
         parser_eat_newlines(&state);
 	}
 	return first_statement;

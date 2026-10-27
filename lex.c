@@ -109,7 +109,7 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
 void skip_until(string input, uint64_t *i, char token) {
 	while (input.buf[*i] != token) {
 		if (*i >= input.length) {
-			panic("EOF reached while attempting to parse comment.\n");
+			return;
 		}
 		*i += 1;
 	}
@@ -146,7 +146,6 @@ token_array lex_entire_file(string input) {
 				
 				if (input.buf[i] == TOKEN_SLASH) { // a single line comment
 					skip_until(input, &i, TOKEN_END_OF_LINE);
-					ch = input.buf[i];
 					continue;
 				}
 				else if (input.buf[i] == TOKEN_STAR) { // a multi line comment
@@ -187,7 +186,6 @@ token_array lex_entire_file(string input) {
 							i += 1;
 						}
 					}
-					ch = input.buf[i];
 					continue;
 				}
 				else { // not a comment
