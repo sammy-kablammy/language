@@ -53,13 +53,6 @@ void token_array_append(token_array *arr, token tok) {
     arr->length += 1;
 }
 
-void token_array_remove_last(token_array *arr) {
-	if (arr->length == 0) {
-		panic("attempted to remove from token array when it was empty\n");
-	}
-	arr->length -= 1;
-}
-
 bool is_keyword_character(char ch) {
     return (ch >= 'a' && ch <= 'z') ||
         (ch >= 'A' && ch <= 'Z') ||
