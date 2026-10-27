@@ -133,9 +133,6 @@ statement_node* parse_entire_file(token_array tokens) {
 				current_statement->next = parse_statement(&state);
 				current_statement = current_statement->next;
 				break;
-			case TOKEN_END_OF_LINE:
-				parser_eat_newlines(&state);
-				break;
 			default:
 				panic("uncaught syntax at token %ld\n", state.pos);
 		}
