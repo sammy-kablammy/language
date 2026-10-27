@@ -66,10 +66,6 @@ struct expression_node {
     } value;
 };
 
-bool is_comment(parser_state* state);
-void parse_comment(parser_state* state);
-void parse_single_comment(parser_state* state);
-void parse_multi_comment(parser_state* state);
 assignment_node parse_assignment(parser_state* state);
 statement_node *parse_statement(parser_state* state);
 expression_node *parse_expression(parser_state* state, int prev_prec);
@@ -108,11 +104,6 @@ statement_node* parse_entire_file(token_array tokens) {
     parser_eat_newlines(&state);
 
     statement_node *first_statement = NULL;
-	// get rid of all leading comments before capturing first statement
-	while (is_comment(&state)) {
-		parse_comment(&state);
-		parser_eat_newlines(&state);
-	}
 	if (state.pos < state.tokens.length) {
 		switch (state.current_token.kind) {
 			case TOKEN_RETURN: // fall through
@@ -133,20 +124,6 @@ statement_node* parse_entire_file(token_array tokens) {
 				current_statement->next = parse_statement(&state);
 				current_statement = current_statement->next;
 				break;
-			case TOKEN_SLASH:
-				parser_advance(&state);
-				if (state.tokens.buf[state.pos].kind == TOKEN_SLASH) {
-					parser_advance(&state);
-					parse_single_comment(&state);
-				}
-				else if (state.tokens.buf[state.pos].kind == TOKEN_STAR) {
-					parser_advance(&state);
-					parse_multi_comment(&state);
-				}
-				else {
-					panic("slash parsed, but no correct syntax follows. did you mean to type a slash at token %ld?\n", state.pos);
-				}
-				break;
 			case TOKEN_END_OF_LINE:
 				parser_eat_newlines(&state);
 				break;
@@ -156,62 +133,6 @@ statement_node* parse_entire_file(token_array tokens) {
         parser_eat_newlines(&state);
 	}
 	return first_statement;
-}
-
-bool is_comment(parser_state* state) {
-	if (state->current_token.kind != TOKEN_SLASH) return false;
-	parser_advance(state);
-	if (state->current_token.kind == TOKEN_SLASH) {
-		// weird quirk, specifically don't advance here, wait until return from function
-		// check kind of type, and that will tell you whether it is multi or single line comment
-		return true;
-	}
-	else if (state->current_token.kind == TOKEN_STAR) {
-		return true;
-	}
-	else return false;
-}
-
-void parse_comment(parser_state* state) {
-	if (state->current_token.kind == TOKEN_SLASH) {
-		parser_advance(state);
-		parse_single_comment(state);
-	}
-	else if (state->current_token.kind == TOKEN_STAR) {
-		parser_advance(state);
-		parse_multi_comment(state);
-	}
-	else {
-		printf("unreachable statement reached whilst parsing comment at position %ld\n", state->pos);
-	}
-}
-
-void parse_single_comment(parser_state* state) {
-	while (state->current_token.kind != TOKEN_END_OF_LINE) {
-		parser_advance(state);
-	}
-}
-
-void parse_multi_comment(parser_state* state) {
-	// look for a star then a following slash
-	while (state->pos != state->tokens.length) {
-		if (state->current_token.kind == TOKEN_STAR) {
-			parser_advance(state);
-			if (state->pos == state->tokens.length) {
-				panic("it appears you forgot to end your multi-line comment with a slash at the end of the file\n");
-			}
-			else if (state->current_token.kind == TOKEN_SLASH) {
-				parser_advance(state);
-				return;
-			}
-			else {
-				panic("slash expected at token %ld\n", state->pos);
-			}
-		}
-		else {
-			parser_advance(state);
-		}
-	}
 }
 
 assignment_node parse_assignment(parser_state* state) {

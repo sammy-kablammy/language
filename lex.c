@@ -57,12 +57,6 @@ void token_array_remove_last(token_array *arr) {
 	arr->length -= 1;
 }
 
-void skip_spaces(string input, uint64_t *i) {
-	while (*i < input.length && input.buf[*i] == ' ') {
-		*i += 1;
-	}
-}
-
 bool is_keyword_character(char ch) {
     return (ch >= 'a' && ch <= 'z') ||
         (ch >= 'A' && ch <= 'Z') ||
@@ -110,6 +104,28 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
     };
 }
 
+void skip_until(string input, int64_t *i, char token) {
+	while (input.buf[i] != token) {
+		if (i >= input.length) {
+			panic("EOF reached while attempting to parse comment.\n");
+		}
+		*i += 1;
+	}
+}
+
+void skip_spaces(string input, int64_t *i) {
+	while (input.buf[*i] == ' ' || input.buf[*i] == '\t') {
+		if (i >= input.length) {
+			// realistically this can totally happen in a valid file, where they just have spaces at the end of their file.
+			// optionally warn them to that they have whitespace at the end of the file. but is that our job as the compiler.. hm.
+			// if we want to talk about all these toolchains that are produced and how annoying it is to have to use 3 different
+			// applications to effectively develop, then by all means the compiler should take this responsibility.
+			return;
+		}
+		*i += 1;
+	}
+}
+
 token_array lex_entire_file(string input) {
     token_array tokens = token_array_create();
     uint64_t i = 0;
@@ -117,43 +133,64 @@ token_array lex_entire_file(string input) {
         token tok = { 0 };
         char ch = input.buf[i];
         switch (ch) {
-			case TOKEN_SLASH: // dont fall through as we need to potentially move forward now not later
+			case TOKEN_SLASH:
+				int multiline_openers = 0;
 				i += 1;
-				skip_spaces(input, &i);
-				if (i < input.length && input.buf[i] == TOKEN_SLASH) {
-					while (i < input.length && input.buf[i] != TOKEN_END_OF_LINE) {
-						i += 1;
+				if (i >= input.length) {
+					panic("EOF reached while attempting to parse comment\n");
+				}
+				else { /* do nothing */ }
+				
+				if (input.buf[i] == TOKEN_SLASH) { // a single line comment
+					skip_until(string, &i, TOKEN_END_OF_LINE);
+					ch = input.buf[i];
+					continue;
+				}
+				else if (input.buf[i] == TOKEN_STAR) { // a multi line comment
+					multiline_openers += 1;
+					i += 1;
+					while (multiline_openers > 0) {
+						if (i >= input.length) {
+							panic("EOF reached while parsing multi-line comment.\n");
+						}
+						else { /* do nothing */ }
+						
+						if (input.buf[i] == TOKEN_SLASH) {
+							i += 1;
+							if (i >= input.length) {
+								panic("EOF reached while parsing multi-line comment.\n");
+							}
+							else if (input.buf[i] == TOKEN_SLASH) { // a nested single line comment
+								skip_until(string, &i, TOKEN_END_OF_LINE);
+							}
+							else if (input.buf[i] == TOKEN_STAR) { // a nested multi line comment
+								multiline_openers += 1;
+								i += 1;
+							}
+							else { /* do nothing */ }
+						}
+						else if (input.buf[i] == TOKEN_STAR) {
+							i += 1;
+							if (i >= input.length) {
+								panic("EOF reached while parsing multi-line comment.\n");
+							}
+							else if (input.buf[i] == TOKEN_SLASH) { // end of a multi line comment
+								multiline_openers -= 1;
+								i += 1;
+							}
+							else { /* do nothing */ }
+						}
+						else { // normal part of comment parsed
+							i += 1;
+						}
 					}
 					ch = input.buf[i];
 					continue;
 				}
-				else if (i < input.length && input.buf[i] == TOKEN_STAR) {
-					i += 1;
-					bool end_of_multi_comment = false;
-					while (!end_of_multi_comment) {
-						while (i < input.length) {
-							if  (input.buf[i] == TOKEN_STAR) {
-								i += 1;
-								skip_spaces(input, &i);
-								if (input.buf[i] == TOKEN_SLASH) {
-									end_of_multi_comment = true;
-									break;
-								}
-							}
-							i += 1;
-						}
-						i += 1;
-						skip_spaces(input, &i);
-						if (i < input.length && input.buf[i] == TOKEN_SLASH) {
-							end_of_multi_comment = true;
-						}
-					}
-					i += 1;
-					continue;
-				}
-				// if we make it here, it isn't a comment
-				tok.kind = ch;
-				break;
+				else { // not a comment
+					tok.kind = ch;
+					break;
+				}	
 			// All the single character tokens can be converted directly:
 			case TOKEN_STAR: // fall through
             case TOKEN_ASSIGN: // fall through
@@ -177,6 +214,7 @@ token_array lex_entire_file(string input) {
                 break;
 			case ' ': // fall through
 			case '\t':
+				skip_spaces(input, &i);
 				i += 1;
 				continue;
             default:
