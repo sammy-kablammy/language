@@ -1,9 +1,11 @@
-================= HASH TABLE =================
+================= TYPE TABLE =================
+| value=   1 | key="int"
+| value=   2 | key="bool"
+=============== END TYPE TABLE ===============
+================= SYMBOL TABLE =================
 | value=   2 | key="is_also_false"
 | value=   2 | key="is_false"
 | value=   1 | key="x"
 | value=   1 | key="y"
-| value=   1 | key="int"
-| value=   2 | key="bool"
 | value=   2 | key="is_true"
-=============== END HASH TABLE ===============
+=============== END SYMBOL TABLE ===============
