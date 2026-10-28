@@ -161,15 +161,12 @@ uint32_t sprint_token(char *destination, token tok) {
             return 1;
             break;
         default:
-            panic("This is not the real implementation");
+            panic("This is not the real implementation %d", tok.kind);
     }
 }
 
 // TODO Think about what happens if our custom codes are expanded to
 // backslashes or percents, as printf would almost certainly break.
-
-// TODO bounds checks on buf
-char buf[10000] = { 0 };
 
 // For now this relies on sprintf for most conversion codes, but this can be
 // changed
@@ -183,7 +180,6 @@ void compiler_printf(const char *fmt, ...) {
     uint32_t buf_pos = 0;
     while (fmt[fmt_pos] != '\0') {
         if (fmt[fmt_pos] == '%') {
-            // remember to also check: %NUL %%
             fmt_pos += 1;
             char conversion_code = fmt[fmt_pos];
             if (conversion_code == 'T') {
@@ -192,8 +188,13 @@ void compiler_printf(const char *fmt, ...) {
             } else if (conversion_code == 'S') {
                 string str = va_arg(args, string);
                 buf_pos += sprint_string(buf + buf_pos, str);
+            } else if (conversion_code == '%') {
+                buf[buf_pos] = '%';
+                buf_pos += 1;
+            } else if (conversion_code == '\0') {
+                panic("Expected conversion code, but reached end of format string '%s'", fmt);
             } else if (conversion_code == 'd') {
-                // Fall back on sprintf
+                // For now we rely on libc's sprintf for most conversion codes
                 buf_pos += sprintf(buf + buf_pos, "%d", va_arg(args, int));
             } else {
                 panic("Unrecognized conversion code '%c'", conversion_code);

@@ -18,8 +18,14 @@ int main(int argc, char **argv) {
     token tok = { .kind = TOKEN_PLUS, };
     compiler_printf("Token '%T' Yeah %d tokens are cool\n", tok, 100);
     string str = { .buf = "Hello", .length = sizeof("Hello") - 1 };
-    compiler_printf("String '%S' and some percents maybe", str, 100);
+    compiler_printf("String '%S' and some percents maybe 100%%%%yup\n", str);
+    compiler_printf("Bruh %");
+
+    char buf[10000];
+    compiler_sprintf(buf, "String '%S' and tok %T\n", str, tok);
+
     fflush(stdout);
+    fflush(stderr);
     return 0;
 
     // handle compiler testing arguments (intended for internal use only)
