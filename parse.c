@@ -41,16 +41,23 @@ typedef struct assignment_node {
 	expression_node *expression;
 } assignment_node;
 
+typedef struct while_loop_node {
+	expression_node *condition;
+    statement_node *body;
+} while_loop_node;
+
 struct statement_node {
     enum {
         DECLARATION,
         ASSIGNMENT,
+        WHILE_LOOP,
         RETURN,
     } kind;
 
     union {
         declaration_node declaration;
         assignment_node assignment;
+        while_loop_node while_loop;
         // This one's a pointer because a return statement may or may not have
         // an expression with it. NULL pointer represents plain return.
         expression_node *maybe_return_expression;
@@ -112,6 +119,26 @@ int operator_prec(token t) {
 			print_token(t);
 			panic(" is not a recognizable operator");
 	}
+}
+
+// (This looks kinda like parse_entire_file, but the conditions are different)
+statement_node *parse_block(parser_state *state) {
+    parser_eat_newlines(state);
+
+    statement_node *first_statement = NULL;
+	if (state->current_token.kind != TOKEN_RBRACE) {
+		first_statement = parse_statement(state);
+        parser_eat_newlines(state);
+    }
+
+    statement_node *current_statement = first_statement;
+	while (state->current_token.kind != TOKEN_RBRACE) {
+        current_statement->next = parse_statement(state);
+        parser_eat_newlines(state);
+        current_statement = current_statement->next;
+	}
+
+    return first_statement;
 }
 
 statement_node* parse_entire_file(token_array tokens) {
@@ -192,6 +219,20 @@ statement_node *parse_statement(parser_state *state) {
         case TOKEN_IDENTIFIER:
             *stmt = parse_declaration_or_assignment(state);
             break;
+        case TOKEN_WHILE:
+            stmt->kind = WHILE_LOOP;
+            parser_advance(state);
+            stmt->value.while_loop.condition = parse_expression(state, MIN_PREC);
+            if (state->current_token.kind != TOKEN_LBRACE) {
+                panic("Expected '{' after while-loop condition");
+            }
+            parser_advance(state);
+            stmt->value.while_loop.body = parse_block(state);
+            if (state->current_token.kind != TOKEN_RBRACE) {
+                panic("Expected '}' after while-loop body");
+            }
+            parser_advance(state);
+            break;
         default:
             panic("Unrecognized token kind (%d) in parse_statement", state->current_token.kind);
     }
@@ -254,7 +295,9 @@ void print_token(token t) {
         case TOKEN_SLASH: // fall through
         case TOKEN_DOT: // fall through
 		case TOKEN_LESS_THAN: // fall through
-		case TOKEN_GREATER_THAN:
+		case TOKEN_GREATER_THAN: // fall through
+		case TOKEN_LBRACE: // fall through
+		case TOKEN_RBRACE:
 			printf("%c ", t.kind);
 			break;
         case TOKEN_END_OF_LINE:
