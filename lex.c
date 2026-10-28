@@ -213,7 +213,7 @@ int compiler_vsprintf(char *buf, const char *fmt, va_list args) {
                 buf_pos += sprintf(buf + buf_pos, "%s", va_arg(args, char *));
                 break;
             case 'c':
-                // (apparently libc's %c expects an int, not a char)
+                // (apparently %c expects an int, not a char)
                 buf_pos += sprintf(buf + buf_pos, "%c", va_arg(args, int));
                 break;
             case '%':
