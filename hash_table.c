@@ -93,8 +93,8 @@ void hash_table_free(hash_table table) {
     xfree(table.entries);
 }
 
-void hash_table_print(hash_table table) {
-    printf("================= HASH TABLE =================\n");
+void hash_table_print(hash_table table, const char *name) {
+    printf("================= %s =================\n", name);
     for (int i = 0; i < table.num_entries_allocated; i++) {
         hash_entry entry = table.entries[i];
         if (entry.is_used) {
@@ -103,5 +103,5 @@ void hash_table_print(hash_table table) {
             printf("\"\n");
         }
     }
-    printf("=============== END HASH TABLE ===============\n");
+    printf("=============== END %s ===============\n", name);
 }
