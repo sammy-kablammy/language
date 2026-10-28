@@ -165,61 +165,113 @@ uint32_t sprint_token(char *destination, token tok) {
     }
 }
 
-// TODO Think about what happens if our custom codes are expanded to
-// backslashes or percents, as printf would almost certainly break.
-
-// For now this relies on sprintf for most conversion codes, but this can be
-// changed
+// Custom vsprintf that supports compiler-specific format strings.
 //
-// fmt must be non null
-void compiler_printf(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
+// 'buf' should be really big.
+//
+// Return number of bytes written, excluding NUL. So writing "hey" returns 3.
+//
+// For now, fall back on libc's sprintf for non-custom formatting.
+int compiler_vsprintf(char *buf, const char *fmt, va_list args) {
+    if (fmt == NULL) {
+        panic("compiler_vsprintf format string is NULL");
+    }
 
     uint32_t fmt_pos = 0;
     uint32_t buf_pos = 0;
     while (fmt[fmt_pos] != '\0') {
-        if (fmt[fmt_pos] == '%') {
-            fmt_pos += 1;
-            char conversion_code = fmt[fmt_pos];
-            if (conversion_code == 'T') {
-                token tok = va_arg(args, token);
-                buf_pos += sprint_token(buf + buf_pos, tok);
-            } else if (conversion_code == 'S') {
-                string str = va_arg(args, string);
-                buf_pos += sprint_string(buf + buf_pos, str);
-            } else if (conversion_code == '%') {
-                buf[buf_pos] = '%';
-                buf_pos += 1;
-            } else if (conversion_code == '\0') {
-                panic("Expected conversion code, but reached end of format string '%s'", fmt);
-            } else if (conversion_code == 'd') {
-                // For now we rely on libc's sprintf for most conversion codes
-                buf_pos += sprintf(buf + buf_pos, "%d", va_arg(args, int));
-            } else {
-                panic("Unrecognized conversion code '%c'", conversion_code);
-            }
-            fmt_pos += 1;
-            continue;
-        } else {
+        if (fmt[fmt_pos] != '%') {
             buf[buf_pos] = fmt[fmt_pos];
             buf_pos += 1;
             fmt_pos += 1;
             continue;
         }
+        fmt_pos += 1;
+
+        char conversion_code = fmt[fmt_pos];
+        fmt_pos += 1;
+        switch (conversion_code) {
+            case 'T':
+                buf_pos += sprint_token(buf + buf_pos, va_arg(args, token));
+                break;
+            case 'S':
+                buf_pos += sprint_string(buf + buf_pos, va_arg(args, string));
+                break;
+            case 'd':
+                buf_pos += sprintf(buf + buf_pos, "%d", va_arg(args, int));
+                break;
+            case 'u':
+                buf_pos += sprintf(buf + buf_pos, "%u", va_arg(args, unsigned int));
+                break;
+            case 'f':
+                buf_pos += sprintf(buf + buf_pos, "%f", va_arg(args, double));
+                break;
+            case 'x':
+                buf_pos += sprintf(buf + buf_pos, "%x", va_arg(args, unsigned int));
+                break;
+            case 's':
+                buf_pos += sprintf(buf + buf_pos, "%s", va_arg(args, char *));
+                break;
+            case 'c':
+                // (apparently libc's %c expects an int, not a char)
+                buf_pos += sprintf(buf + buf_pos, "%c", va_arg(args, int));
+                break;
+            case '%':
+                buf[buf_pos] = '%';
+                buf_pos += 1;
+                break;
+            case '\0':
+                panic("Expected conversion code, but reached end of format string '%s'", fmt);
+                break;
+            default:
+                panic("Unrecognized conversion code '%%%c' in format string '%s'", conversion_code, fmt);
+                break;
+        }
     }
 
-    // TODO bounds check
     buf[buf_pos] = '\0';
 
-    fprintf(stdout, "%s", buf);
-
-    va_end(args);
+    return buf_pos;
 }
+
+int compiler_sprintf(char *buf, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    int written = compiler_vsprintf(buf, fmt, args);
+    va_end(args);
+    return written;
+}
+
+int compiler_printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buf[10000] = { 0 };
+    int written = compiler_vsprintf(buf, fmt, args);
+    printf("%s", buf);
+    va_end(args);
+    return written;
+}
+
+int compiler_fprintf(FILE *file, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buf[10000] = { 0 };
+    int written = compiler_vsprintf(buf, fmt, args);
+    fprintf(file, "%s", buf);
+    va_end(args);
+    return written;
+}
+
+// This naming scheme mirrors libc, not sure which to use yet
+#define cprintf compiler_printf
+#define csprintf compiler_sprintf
+#define cfprintf compiler_fprintf
 
 void lex_error(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
+
+    // fprintf(stdout, "%s", buf);
 }
 
 void debug_print_tokens(token_array tokens) {
