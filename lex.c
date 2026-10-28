@@ -273,28 +273,3 @@ void lex_error(const char *fmt, ...) {
 
     // fprintf(stdout, "%s", buf);
 }
-
-void debug_print_tokens(token_array tokens) {
-    for (uint64_t i = 0; i < tokens.length; i++) {
-        token tok = tokens.buf[i];
-
-        switch (tok.kind) {
-            case TOKEN_IDENTIFIER:
-                printf("Token kind=identifier value='");
-                print_string(tok.value.identifier);
-                printf("'\n");
-
-                lex_error("Token kind=identifier value='%T'\n", tok.value.identifier);
-                break;
-            case TOKEN_INTEGER:
-                printf("Token kind=integer value=%lu\n", tok.value.integer);
-                break;
-            case TOKEN_END_OF_LINE:
-                printf("Token (end of line)\n");
-                break;
-            default:
-                printf("Token kind='%c'\n", tok.kind);
-                break;
-        }
-    }
-}
