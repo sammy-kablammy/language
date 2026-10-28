@@ -151,6 +151,76 @@ token_array lex_entire_file(string input) {
     return tokens;
 }
 
+// TODO bounds check on 'destination'
+//
+// Returns how many characters it wrote 
+uint32_t sprint_token(char *destination, token tok) {
+    switch (tok.kind) {
+        case TOKEN_PLUS:
+            *destination = TOKEN_PLUS;
+            return 1;
+            break;
+        default:
+            panic("This is not the real implementation");
+    }
+}
+
+// TODO Think about what happens if our custom codes are expanded to
+// backslashes or percents, as printf would almost certainly break.
+
+// TODO bounds checks on buf
+char buf[10000] = { 0 };
+
+// For now this relies on sprintf for most conversion codes, but this can be
+// changed
+//
+// fmt must be non null
+void compiler_printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    uint32_t fmt_pos = 0;
+    uint32_t buf_pos = 0;
+    while (fmt[fmt_pos] != '\0') {
+        // printf("fmt_pos=%d\n", fmt_pos);
+        if (fmt[fmt_pos] == '%') {
+            // remember to also check: %NUL %%
+            fmt_pos += 1;
+            char conversion_code = fmt[fmt_pos];
+            if (conversion_code == 'T') {
+                token tok = va_arg(args, token);
+                buf_pos += sprint_token(buf + buf_pos, tok);
+            } else if (conversion_code == 'd') {
+                // Fall back on sprintf
+                int int_arg = va_arg(args, int);
+                buf_pos += sprintf(buf + buf_pos, "%d", int_arg);
+            } else {
+                char conversion_code = 'x';
+                panic("Unrecognized conversion code '%c'", conversion_code);
+            }
+            fmt_pos += 1;
+            continue;
+        } else {
+            buf[buf_pos] = fmt[fmt_pos];
+            buf_pos += 1;
+            fmt_pos += 1;
+            continue;
+        }
+    }
+
+    // TODO bounds check
+    buf[buf_pos] = '\0';
+
+    fprintf(stdout, "%s", buf);
+
+    va_end(args);
+}
+
+void lex_error(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+}
+
 void debug_print_tokens(token_array tokens) {
     for (uint64_t i = 0; i < tokens.length; i++) {
         token tok = tokens.buf[i];
@@ -160,6 +230,8 @@ void debug_print_tokens(token_array tokens) {
                 printf("Token kind=identifier value='");
                 print_string(tok.value.identifier);
                 printf("'\n");
+
+                lex_error("Token kind=identifier value='%T'\n", tok.value.identifier);
                 break;
             case TOKEN_INTEGER:
                 printf("Token kind=integer value=%lu\n", tok.value.integer);

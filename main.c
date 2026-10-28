@@ -1,5 +1,6 @@
 // This project is a unity build / single compilation unit build.
 #include "platform.c"
+// #include "error_messages.c"
 #include "lex.c"
 #include "parse.c"
 #include "pretty_print.c"
@@ -7,10 +8,17 @@
 void print_expression(expression_node e);
 void print_leaves(infix_node* node);
 
+void lex_error(const char *fmt, ...);
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         panic("Usage: '%s <file>'", argv[0]);
     }
+
+    token tok = { .kind = TOKEN_PLUS, };
+    compiler_printf("Token '%T' Yeah %d tokens are cool\n", tok, 100);
+    fflush(stdout);
+    return 0;
 
     // handle compiler testing arguments (intended for internal use only)
     bool pretty_print_and_exit = false;
