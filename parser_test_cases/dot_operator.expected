@@ -1,0 +1,4 @@
+somefield = mystruct . myfield
+somefield = the . compiler . should . support . really . long . chains
+somefield = whitespace . between . dots
+somefield = this . that + things . stuff

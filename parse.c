@@ -86,7 +86,8 @@ bool is_operator(token t);
 enum {
 	MIN_PREC,
 	ADD_PREC,
-	MULT_PREC
+	MULT_PREC,
+	DOT_PREC
 };
 
 int operator_prec(token t) {
@@ -97,6 +98,8 @@ int operator_prec(token t) {
 		case TOKEN_STAR:
 		case TOKEN_SLASH:
 			return MULT_PREC;
+		case TOKEN_DOT:
+			return DOT_PREC;
 		default:
 			print_token(t);
 			panic(" is not a recognizable operator");
@@ -242,6 +245,7 @@ void print_token(token t) {
         case TOKEN_MINUS: // fall through
         case TOKEN_STAR: // fall through 
         case TOKEN_SLASH: // fall through
+        case TOKEN_DOT: // fall through
 			printf("%c ", t.kind);
 			break;
         case TOKEN_END_OF_LINE:
@@ -266,7 +270,8 @@ bool is_operator(token t) {
 		case TOKEN_PLUS: // fall through
 		case TOKEN_MINUS: // fall through
 		case TOKEN_STAR: // fall through
-		case TOKEN_SLASH:
+		case TOKEN_SLASH: // fall through
+		case TOKEN_DOT:
 			return true;
 		default:
 			return false;
