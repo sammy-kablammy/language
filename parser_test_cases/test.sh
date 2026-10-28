@@ -12,6 +12,8 @@ indent() {
     sed 's/^/ | /'
 }
 
+did_any_fail=''
+
 for test_case_full_name in parser_test_cases/*.lang; do
 
     heading="Test case $BLUE'$test_case_full_name'$CLEAR\n"
@@ -24,13 +26,18 @@ for test_case_full_name in parser_test_cases/*.lang; do
         expected="$test_case_full_name"
     fi
 
-    ./compiler "$test_case_full_name" > "$got"
+    ./compiler --pretty-print-and-exit "$test_case_full_name" > "$got"
 
     if diff -q "$expected" "$got" 2>&1 >/dev/null; then
         printf "$GREEN$BOLD[ PASS ]$CLEAR $heading"
     else
         printf "$RED$BOLD[ FAIL ]$CLEAR $heading"
         diff --color=always "$expected" "$got" | indent
+        did_any_fail=yes
     fi
 
 done
+
+if [ -n "$did_any_fail" ]; then
+    exit 1
+fi
