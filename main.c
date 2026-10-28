@@ -17,6 +17,8 @@ int main(int argc, char **argv) {
 
     token tok = { .kind = TOKEN_PLUS, };
     compiler_printf("Token '%T' Yeah %d tokens are cool\n", tok, 100);
+    string str = { .buf = "Hello", .length = sizeof("Hello") - 1 };
+    compiler_printf("String '%S' and some percents maybe", str, 100);
     fflush(stdout);
     return 0;
 

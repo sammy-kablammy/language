@@ -182,7 +182,6 @@ void compiler_printf(const char *fmt, ...) {
     uint32_t fmt_pos = 0;
     uint32_t buf_pos = 0;
     while (fmt[fmt_pos] != '\0') {
-        // printf("fmt_pos=%d\n", fmt_pos);
         if (fmt[fmt_pos] == '%') {
             // remember to also check: %NUL %%
             fmt_pos += 1;
@@ -190,12 +189,13 @@ void compiler_printf(const char *fmt, ...) {
             if (conversion_code == 'T') {
                 token tok = va_arg(args, token);
                 buf_pos += sprint_token(buf + buf_pos, tok);
+            } else if (conversion_code == 'S') {
+                string str = va_arg(args, string);
+                buf_pos += sprint_string(buf + buf_pos, str);
             } else if (conversion_code == 'd') {
                 // Fall back on sprintf
-                int int_arg = va_arg(args, int);
-                buf_pos += sprintf(buf + buf_pos, "%d", int_arg);
+                buf_pos += sprintf(buf + buf_pos, "%d", va_arg(args, int));
             } else {
-                char conversion_code = 'x';
                 panic("Unrecognized conversion code '%c'", conversion_code);
             }
             fmt_pos += 1;

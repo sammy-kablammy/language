@@ -19,6 +19,16 @@ const bool false = 0;
 
 string read_entire_file(const char *filename);
 
+// TODO bounds check buf
+uint32_t sprint_string(char *buf, string str) {
+    uint64_t i = 0;
+    while (i < str.length) {
+        buf[i] = str.buf[i];
+        i += 1;
+    }
+    return (uint32_t)i;
+}
+
 void print_string(string str) {
     for (uint64_t i = 0; i < str.length; i++) {
         printf("%c", str.buf[i]);
