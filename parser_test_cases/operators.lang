@@ -2,3 +2,9 @@ result = foo + bar
 result = foo - bar
 result = foo * bar
 result = foo / bar
+result = small < big
+result = small <= big
+result = big > small
+result = big >= small
+result = this == that
+result = this != that
