@@ -36,6 +36,7 @@ void parser_advance(parser_state *state) {
         panic("Advancing parser to token pos %lu would go out of bounds", state->pos);
     }
     state->current_token = state->tokens.buf[state->pos];
+    compiler_printf("-- Advancing parser to token %T\n", state->current_token);
 }
 
 void parser_eat_newlines(parser_state *state) {
@@ -272,23 +273,24 @@ int sprint_token(char *buf, token t) {
         case TOKEN_STAR: // fall through 
         case TOKEN_SLASH: // fall through
         case TOKEN_DOT: // fall through
-			written += sprintf(buf, "%c ", t.kind);
+			written += sprintf(buf + written, "%c ", t.kind);
 			break;
         case TOKEN_END_OF_LINE:
-			written += printf(buf, "newline ");
+			written += sprintf(buf + written, "(newline) ");
 			break;
 		case TOKEN_IDENTIFIER:
-			written += sprintf(buf, "'");
-			written += sprint_string(buf, t.value.identifier);
-			written += sprintf(buf, "' ");
+			written += sprintf(buf + written, "'");
+			written += sprint_string(buf + written, t.value.identifier);
+			written += sprintf(buf + written, "' ");
 			break;
 		case TOKEN_INTEGER:
-			written += sprintf(buf, "'%ld' ", t.value.integer);
+			written += sprintf(buf + written, "'%ld' ", t.value.integer);
 			break;
 		default:
-			written += sprintf(buf, "token read: i have no clue ");
+			written += sprintf(buf + written, "token read: i have no clue ");
 			break;
 	}
+    written += sprintf(buf + written, "(tokpos=%lu) ", t.file_position);
     return written;
 }
 

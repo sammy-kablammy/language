@@ -24,7 +24,7 @@ typedef struct token {
         string identifier; // Only used for identifiers
         uint64_t integer; // Only used for integers
     } value;
-    // uint64_t position, // TODO this'll be handy for compiler errors
+    uint64_t file_position;
 } token;
 
 typedef struct token_array {
@@ -66,21 +66,19 @@ bool is_integer_character(char c) {
 }
 
 // 'i' is an outparam
-token lex_number(string input, uint64_t *i) {
+void lex_number(string input, uint64_t *i, token *tok) {
     uint64_t integer = 0;
     while (*i < input.length && is_integer_character(input.buf[*i])) {
         integer *= 10;
         integer += input.buf[*i] - '0';
         *i += 1;
     }
-    return (token){
-        .kind = TOKEN_INTEGER,
-        .value.integer = integer,
-    };
+    tok->kind = TOKEN_INTEGER;
+    tok->value.integer = integer;
 }
 
 // 'i' is an outparam
-token lex_identifier_or_keyword(string input, uint64_t *i) {
+void lex_identifier_or_keyword(string input, uint64_t *i, token *tok) {
     string identifier = (string){
         .buf = input.buf + *i,
         .length = 0,
@@ -91,20 +89,21 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
     }
 
     if (string_equals_cstring(identifier, "return")) {
-        return (token){ .kind = TOKEN_RETURN };
+        tok->kind = TOKEN_RETURN;
+        return;
     }
     if (string_equals_cstring(identifier, "true")) {
-        return (token){ .kind = TOKEN_TRUE };
+        tok->kind = TOKEN_TRUE;
+        return;
     }
     if (string_equals_cstring(identifier, "false")) {
-        return (token){ .kind = TOKEN_FALSE };
+        tok->kind = TOKEN_FALSE;
+        return;
     }
     // Other keywords go here
 
-    return (token){
-        .kind = TOKEN_IDENTIFIER,
-        .value.identifier = identifier,
-    };
+    tok->kind = TOKEN_IDENTIFIER;
+    tok->value.identifier = identifier;
 }
 
 token_array lex_entire_file(string input) {
@@ -112,6 +111,7 @@ token_array lex_entire_file(string input) {
     uint64_t i = 0;
     while (i < input.length) {
         token tok = { 0 };
+        tok.file_position = i;
         char ch = input.buf[i];
         switch (ch) {
             // All the single character tokens can be converted directly:
@@ -136,14 +136,14 @@ token_array lex_entire_file(string input) {
             case '7': // fall through
             case '8': // fall through
             case '9': // fall through
-                tok = lex_number(input, &i);
+                lex_number(input, &i, &tok);
                 break;
 			case ' ': // fall through
 			case '\t':
 				i += 1;
 				continue;
             default:
-                tok = lex_identifier_or_keyword(input, &i);
+                lex_identifier_or_keyword(input, &i, &tok);
                 break;
         }
         token_array_append(&tokens, tok);
