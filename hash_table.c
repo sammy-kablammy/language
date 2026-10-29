@@ -24,8 +24,6 @@ int hash(string key) {
     return result;
 }
 
-void hash_table_expand_if_necessary(hash_table *table);
-
 // Remember to call hash_table_free
 hash_table hash_table_alloc() {
     return (hash_table){
@@ -52,7 +50,22 @@ void hash_table_insert(hash_table *table, string key, uint32_t value) {
         .value = value,
     };
     table->num_entries_used += 1;
-    hash_table_expand_if_necessary(table);
+
+    if (table->num_entries_used < table->num_entries_allocated / 2) {
+        return;
+    }
+    // EXPAND
+    int old_num_entries_allocated = table->num_entries_allocated;
+    hash_entry *old_entries = table->entries;
+    table->num_entries_used = 0;
+    table->num_entries_allocated *= 2;
+    table->entries = xalloc(table->num_entries_allocated * sizeof(hash_entry));
+    for (int i = 0; i < old_num_entries_allocated; i++) {
+        if (old_entries[i].is_used) {
+            hash_table_insert(table, old_entries[i].key, old_entries[i].value);
+        }
+    }
+    xfree(old_entries);
 }
 
 // Return whether 'key' is in table, possibly storing its value in 'out'
@@ -70,24 +83,6 @@ bool hash_table_lookup(hash_table *table, string key, uint32_t *out) {
     return false;
 }
 
-// (don't need to call this outside of this file)
-void hash_table_expand_if_necessary(hash_table *table) {
-    if (table->num_entries_used < table->num_entries_allocated / 2) {
-        return;
-    }
-
-    int old_num_entries_allocated = table->num_entries_allocated;
-    hash_entry *old_entries = table->entries;
-    table->num_entries_used = 0;
-    table->num_entries_allocated *= 2;
-    table->entries = xalloc(table->num_entries_allocated * sizeof(hash_entry));
-    for (int i = 0; i < old_num_entries_allocated; i++) {
-        if (old_entries[i].is_used) {
-            hash_table_insert(table, old_entries[i].key, old_entries[i].value);
-        }
-    }
-    xfree(old_entries);
-}
 
 void hash_table_free(hash_table table) {
     xfree(table.entries);
