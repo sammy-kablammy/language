@@ -201,7 +201,6 @@ token_array lex_entire_file(string input) {
 				}
 			// All the single character tokens can be converted directly:
 			case TOKEN_STAR: // fall through
-            case TOKEN_ASSIGN: // fall through
             case TOKEN_PLUS: // fall through
             case TOKEN_MINUS: // fall through
             case TOKEN_COLON: // fall through
