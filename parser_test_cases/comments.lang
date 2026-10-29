@@ -1,0 +1,12 @@
+// this is a single line comment
+var = a
+/* this
+is
+a multi
+line
+comment */ var2 = true
+/* this /* is /* a nested
+*/ multi = line + comment
+*/
+*/ var3 = 3 * 3 // also with an end of line comment after a multi line comment!
+//* this is still just a single line comment.
