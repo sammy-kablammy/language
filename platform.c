@@ -118,6 +118,9 @@ int compiler_vsprintf(char *buf, const char *fmt, va_list args) {
             case 'x':
                 buf_pos += sprintf(buf + buf_pos, "%x", va_arg(args, unsigned int));
                 break;
+            case 'p':
+                buf_pos += sprintf(buf + buf_pos, "%p", va_arg(args, void *));
+                break;
             case 's':
                 buf_pos += sprintf(buf + buf_pos, "%s", va_arg(args, char *));
                 break;
@@ -137,9 +140,7 @@ int compiler_vsprintf(char *buf, const char *fmt, va_list args) {
                 break;
         }
     }
-
     buf[buf_pos] = '\0';
-
     return buf_pos;
 }
 
