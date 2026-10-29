@@ -85,6 +85,7 @@ bool is_operator(token t);
 
 enum {
 	MIN_PREC,
+	RELATIONAL_PREC,
 	ADD_PREC,
 	MULT_PREC,
 	DOT_PREC
@@ -100,6 +101,13 @@ int operator_prec(token t) {
 			return MULT_PREC;
 		case TOKEN_DOT:
 			return DOT_PREC;
+		case TOKEN_LESS_THAN:
+		case TOKEN_LESS_THAN_OR_EQUAL_TO:
+		case TOKEN_GREATER_THAN:
+		case TOKEN_GREATER_THAN_OR_EQUAL_TO:
+		case TOKEN_EQUAL_TO:
+		case TOKEN_NOT_EQUAL_TO:
+			return RELATIONAL_PREC;
 		default:
 			print_token(t);
 			panic(" is not a recognizable operator");
@@ -245,6 +253,8 @@ void print_token(token t) {
         case TOKEN_STAR: // fall through 
         case TOKEN_SLASH: // fall through
         case TOKEN_DOT: // fall through
+		case TOKEN_LESS_THAN: // fall through
+		case TOKEN_GREATER_THAN:
 			printf("%c ", t.kind);
 			break;
         case TOKEN_END_OF_LINE:
@@ -258,8 +268,20 @@ void print_token(token t) {
 		case TOKEN_INTEGER:
 			printf("'%ld' ", t.value.integer);
 			break;
+		case TOKEN_LESS_THAN_OR_EQUAL_TO:
+            printf("<= ");
+            break;
+		case TOKEN_GREATER_THAN_OR_EQUAL_TO:
+            printf(">= ");
+            break;
+		case TOKEN_EQUAL_TO:
+            printf("== ");
+            break;
+		case TOKEN_NOT_EQUAL_TO:
+            printf("!= ");
+            break;
 		default:
-			printf("token read: i have no clue ");
+			panic("print_token: unknown token kind=%d", t.kind);
 			break;
 	}
 }
@@ -272,6 +294,13 @@ bool is_operator(token t) {
 		case TOKEN_SLASH: // fall through
 		case TOKEN_DOT:
 			return true;
+		case TOKEN_LESS_THAN: // fall through
+		case TOKEN_LESS_THAN_OR_EQUAL_TO: // fall through
+		case TOKEN_GREATER_THAN: // fall through
+		case TOKEN_GREATER_THAN_OR_EQUAL_TO: // fall through
+		case TOKEN_EQUAL_TO: // fall through
+		case TOKEN_NOT_EQUAL_TO:
+            return true;
 		default:
 			return false;
 	}

@@ -12,6 +12,8 @@ typedef struct token {
         TOKEN_SLASH = '/',
         TOKEN_COLON = ':',
         TOKEN_DOT = '.',
+        TOKEN_LESS_THAN = '<',
+        TOKEN_GREATER_THAN = '>',
         TOKEN_END_OF_LINE = '\n',
         // multicharacter or non-ascii tokens start above the ascii range:
         TOKEN_IDENTIFIER = 128,
@@ -19,6 +21,10 @@ typedef struct token {
         TOKEN_RETURN,
         TOKEN_TRUE,
         TOKEN_FALSE,
+        TOKEN_LESS_THAN_OR_EQUAL_TO,
+        TOKEN_GREATER_THAN_OR_EQUAL_TO,
+        TOKEN_EQUAL_TO,
+        TOKEN_NOT_EQUAL_TO,
     } kind;
     union {
         string identifier; // Only used for identifiers
@@ -195,7 +201,6 @@ token_array lex_entire_file(string input) {
 				}
 			// All the single character tokens can be converted directly:
 			case TOKEN_STAR: // fall through
-            case TOKEN_ASSIGN: // fall through
             case TOKEN_PLUS: // fall through
             case TOKEN_MINUS: // fall through
             case TOKEN_COLON: // fall through
@@ -203,6 +208,42 @@ token_array lex_entire_file(string input) {
             case TOKEN_END_OF_LINE:
                 i += 1;
                 tok.kind = ch;
+                break;
+            case '<':
+                i += 1;
+                if (i < input.length && input.buf[i] == '=') {
+                    i += 1;
+                    tok.kind = TOKEN_LESS_THAN_OR_EQUAL_TO;
+                } else {
+                    tok.kind = TOKEN_LESS_THAN;
+                }
+                break;
+            case '>':
+                i += 1;
+                if (i < input.length && input.buf[i] == '=') {
+                    i += 1;
+                    tok.kind = TOKEN_GREATER_THAN_OR_EQUAL_TO;
+                } else {
+                    tok.kind = TOKEN_GREATER_THAN;
+                }
+                break;
+            case '=':
+                i += 1;
+                if (i < input.length && input.buf[i] == '=') {
+                    i += 1;
+                    tok.kind = TOKEN_EQUAL_TO;
+                } else {
+                    tok.kind = TOKEN_ASSIGN;
+                }
+                break;
+            case '!':
+                i += 1;
+                if (i < input.length && input.buf[i] == '=') {
+                    i += 1;
+                    tok.kind = TOKEN_NOT_EQUAL_TO;
+                } else {
+                    panic("! token hasn't been added yet");
+                }
                 break;
             case '0': // fall through
             case '1': // fall through
