@@ -22,7 +22,7 @@ void parse_error(parser_state *state, const char *error_message, ...) {
 
     buf_pos += compiler_vsprintf(buf + buf_pos, error_message, args);
 
-    compiler_fprintf(stderr, "%s", buf);
+    compiler_fprintf(stderr, "%s\n", buf);
 
     va_end(args);
     exit(PARSE_ERROR);
