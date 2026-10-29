@@ -151,20 +151,6 @@ token_array lex_entire_file(string input) {
     return tokens;
 }
 
-// TODO bounds check on 'destination'
-//
-// Returns how many characters it wrote 
-uint32_t sprint_token(char *destination, token tok) {
-    switch (tok.kind) {
-        case TOKEN_PLUS:
-            *destination = TOKEN_PLUS;
-            return 1;
-            break;
-        default:
-            panic("This is not the real implementation %d", tok.kind);
-    }
-}
-
 void lex_error(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);

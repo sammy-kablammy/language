@@ -2,7 +2,31 @@ typedef struct parser_state {
 	token_array tokens;
     uint64_t pos;
     token current_token;
+    char *file_name;
 } parser_state;
+
+__attribute__((noreturn))
+// __attribute__((format(printf, 2, 3)))
+void parse_error(parser_state *state, const char *error_message, ...) {
+    va_list args;
+    va_start(args, error_message);
+
+    int line = 1234;
+    int col = 56;
+
+    char buf[10000] = { 0 };
+    int buf_pos = 0;
+
+    buf_pos += compiler_sprintf(buf + buf_pos, "%s%s%s (%d:%d)%s%s parse error%s: ",
+            ANSI_BOLD, state->file_name, ANSI_RESET, line, col, ANSI_RED, ANSI_BOLD, ANSI_RESET, error_message);
+
+    buf_pos += compiler_vsprintf(buf + buf_pos, error_message, args);
+
+    compiler_fprintf(stderr, "%s", buf);
+
+    va_end(args);
+    exit(PARSE_ERROR);
+}
 
 // To keep current_token in sync, prefer this function instead of accessing
 // parser state directly.
@@ -106,11 +130,12 @@ int operator_prec(token t) {
 	}
 }
 
-statement_node* parse_entire_file(token_array tokens) {
+statement_node* parse_entire_file(token_array tokens, char *file_name) {
 	parser_state state = {
         .tokens = tokens,
         .pos = 0,
         .current_token = tokens.buf[0],
+        .file_name = file_name,
     };
 
     parser_eat_newlines(&state);
@@ -166,7 +191,7 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
             },
         };
     } else {
-        panic("Expected ':' or '=' in statement, got token kind=%d", state->current_token.kind);
+        parse_error(state, "Expected ':' or '=' in statement, got %T", state->current_token);
     }
 }
 
@@ -238,7 +263,8 @@ expression_node *parse_leaf(parser_state* state) {
 	return leaf;
 }
 
-void print_token(token t) {
+int sprint_token(char *buf, token t) {
+    int written = 0;
 	switch (t.kind) {
 		case TOKEN_ASSIGN: // fall through
 		case TOKEN_PLUS: // fall through
@@ -246,23 +272,28 @@ void print_token(token t) {
         case TOKEN_STAR: // fall through 
         case TOKEN_SLASH: // fall through
         case TOKEN_DOT: // fall through
-			printf("%c ", t.kind);
+			written += sprintf(buf, "%c ", t.kind);
 			break;
         case TOKEN_END_OF_LINE:
-			printf("newline ");
+			written += printf(buf, "newline ");
 			break;
 		case TOKEN_IDENTIFIER:
-			printf("'");
-			print_string(t.value.identifier);
-			printf("' ");
+			written += sprintf(buf, "'");
+			written += sprint_string(buf, t.value.identifier);
+			written += sprintf(buf, "' ");
 			break;
 		case TOKEN_INTEGER:
-			printf("'%ld' ", t.value.integer);
+			written += sprintf(buf, "'%ld' ", t.value.integer);
 			break;
 		default:
-			printf("token read: i have no clue ");
+			written += sprintf(buf, "token read: i have no clue ");
 			break;
 	}
+    return written;
+}
+
+void print_token(token t) {
+    compiler_printf("%T", t);
 }
 
 bool is_operator(token t) {

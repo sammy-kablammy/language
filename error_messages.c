@@ -8,6 +8,10 @@
 
 
 
+int sprint_token(char *buf, token t);
+
+
+
 #define ANSI_BOLD "\x1b[1m"
 #define ANSI_FAINT "\x1b[2m"
 #define ANSI_ITALIC "\x1b[3m"
