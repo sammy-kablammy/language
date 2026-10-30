@@ -14,13 +14,9 @@ void parse_error(parser_state *state, const char *error_message, ...) {
     va_list args;
     va_start(args, error_message);
 
-    string source_code_line = token_to_source_code(state->file_contents, state->current_token);
-
+    string source_code = token_to_source_code_line(state->file_contents, state->current_token);
     uint64_t line_number = token_to_line_number(state->file_contents, state->current_token);
-
-    int column = (uintptr_t)source_code_line.buf + state->current_token.file_position - (uintptr_t)state->file_contents.buf;
-    printf("%lu %lu %lu\n", (uintptr_t)state->file_contents.buf, state->current_token.file_position, (uintptr_t)source_code_line.buf);
-    // int column = 56;
+    uint64_t column = state->current_token.file_position - (uintptr_t)source_code.buf + (uintptr_t)state->file_contents.buf;
 
     char buf[10000] = { 0 };
     uint32_t buf_pos = 0;
@@ -30,7 +26,7 @@ void parse_error(parser_state *state, const char *error_message, ...) {
             ANSI_RED, ANSI_BOLD, ANSI_RESET, error_message);
     buf_pos += compiler_vsprintf(buf + buf_pos, error_message, args);
     buf_pos += compiler_sprintf(buf + buf_pos, "\n  %s%d |%s %S\n",
-            ANSI_BOLD, line_number, ANSI_RESET, source_code_line);
+            ANSI_BOLD, line_number, ANSI_RESET, source_code);
 
     compiler_fprintf(stderr, "%s", buf);
 

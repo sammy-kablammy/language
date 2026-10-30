@@ -194,7 +194,7 @@ uint64_t token_to_line_number(string source_code, token tok) {
     return line_number;
 }
 
-string token_to_source_code(string source_code, token tok) {
+string token_to_source_code_line(string source_code, token tok) {
     if (tok.file_position >= source_code.length) {
         panic("Somehow a token thinks it's outside the bounds of a file");
     }
