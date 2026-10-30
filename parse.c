@@ -206,7 +206,6 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
             },
         };
     } else {
-        // parser_advance(state);
         parse_error(state, "Expected ':' or '=' in statement, got %T", state->current_token);
     }
 }
