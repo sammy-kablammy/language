@@ -16,11 +16,9 @@ void parse_error(parser_state *state, const char *error_message, ...) {
 
     string source_code_line = token_to_source_code(state->file_contents, state->current_token);
 
-    // printf("Got source code line: buf=%p length=%lu\n", source_code_line.buf, source_code_line.length);
-
     uint64_t line_number = token_to_line_number(state->file_contents, state->current_token);
 
-    int column = (uintptr_t)state->file_contents.buf + state->current_token.file_position - (uintptr_t)source_code_line.buf;
+    int column = (uintptr_t)source_code_line.buf + state->current_token.file_position - (uintptr_t)state->file_contents.buf;
     printf("%lu %lu %lu\n", (uintptr_t)state->file_contents.buf, state->current_token.file_position, (uintptr_t)source_code_line.buf);
     // int column = 56;
 
