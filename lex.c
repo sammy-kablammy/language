@@ -217,7 +217,7 @@ string token_to_source_code(string source_code, token tok) {
         line_start -= 1;
     }
 
-    if (source_code.buf[line_start] == '\n') {
+    if (source_code.buf[line_start] == '\n' || source_code.buf[line_start] == '\r') {
         line_start += 1;
     }
 
