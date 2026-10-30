@@ -173,7 +173,6 @@ uint64_t token_to_line_number(string source_code, token tok) {
     }
 
     uint64_t line_number = 1;
-    // NOTE i < tok.file_position might need to be <= depending on how tok=newline works
     for (uint64_t i = 0; i < source_code.length - 1 && i < tok.file_position; i++) {
         if (source_code.buf[i] == '\n') {
             // LF

@@ -18,12 +18,11 @@ void parse_error(parser_state *state, const char *error_message, ...) {
 
     // printf("Got source code line: buf=%p length=%lu\n", source_code_line.buf, source_code_line.length);
 
-    // uint64_t line_number = token_to_line_number(state->file_contents, state->current_token);
-    uint64_t line_number = 1234;
+    uint64_t line_number = token_to_line_number(state->file_contents, state->current_token);
 
-    // int column = (uintptr_t)state->file_contents.buf + state->current_token.file_position - (uintptr_t)source_code_line.buf;
-    // printf("%lu %lu %lu\n", (uintptr_t)state->file_contents.buf, state->current_token.file_position, (uintptr_t)source_code_line.buf);
-    int column = 56;
+    int column = (uintptr_t)state->file_contents.buf + state->current_token.file_position - (uintptr_t)source_code_line.buf;
+    printf("%lu %lu %lu\n", (uintptr_t)state->file_contents.buf, state->current_token.file_position, (uintptr_t)source_code_line.buf);
+    // int column = 56;
 
     char buf[10000] = { 0 };
     uint32_t buf_pos = 0;
