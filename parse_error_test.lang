@@ -1,1 +1,2 @@
-x 10
+x: int = i + forgot - an operator
+y: int = 10

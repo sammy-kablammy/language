@@ -2,7 +2,10 @@ typedef struct parser_state {
 	token_array tokens;
     uint64_t pos;
     token current_token;
+    // The following are not normally used by the parser, but are needed for
+    // error messages:
     char *file_name;
+    string file_contents;
 } parser_state;
 
 __attribute__((noreturn))
@@ -11,18 +14,28 @@ void parse_error(parser_state *state, const char *error_message, ...) {
     va_list args;
     va_start(args, error_message);
 
-    int line = 1234;
-    int col = 56;
+    string source_code_line = token_to_source_code(state->file_contents, state->current_token);
+
+    // printf("Got source code line: buf=%p length=%lu\n", source_code_line.buf, source_code_line.length);
+
+    // uint64_t line_number = token_to_line_number(state->file_contents, state->current_token);
+    uint64_t line_number = 1234;
+
+    // int column = (uintptr_t)state->file_contents.buf + state->current_token.file_position - (uintptr_t)source_code_line.buf;
+    // printf("%lu %lu %lu\n", (uintptr_t)state->file_contents.buf, state->current_token.file_position, (uintptr_t)source_code_line.buf);
+    int column = 56;
 
     char buf[10000] = { 0 };
-    int buf_pos = 0;
+    uint32_t buf_pos = 0;
 
     buf_pos += compiler_sprintf(buf + buf_pos, "%s%s%s (%d:%d)%s%s parse error%s: ",
-            ANSI_BOLD, state->file_name, ANSI_RESET, line, col, ANSI_RED, ANSI_BOLD, ANSI_RESET, error_message);
-
+            ANSI_BOLD, state->file_name, ANSI_RESET, line_number, column,
+            ANSI_RED, ANSI_BOLD, ANSI_RESET, error_message);
     buf_pos += compiler_vsprintf(buf + buf_pos, error_message, args);
+    buf_pos += compiler_sprintf(buf + buf_pos, "\n  %s%d |%s %S\n",
+            ANSI_BOLD, line_number, ANSI_RESET, source_code_line);
 
-    compiler_fprintf(stderr, "%s\n", buf);
+    compiler_fprintf(stderr, "%s", buf);
 
     va_end(args);
     exit(PARSE_ERROR);
@@ -36,7 +49,7 @@ void parser_advance(parser_state *state) {
         panic("Advancing parser to token pos %lu would go out of bounds", state->pos);
     }
     state->current_token = state->tokens.buf[state->pos];
-    compiler_printf("-- Advancing parser to token %T\n", state->current_token);
+    // compiler_printf("-- Advancing parser to token %T\n", state->current_token);
 }
 
 void parser_eat_newlines(parser_state *state) {
@@ -131,12 +144,13 @@ int operator_prec(token t) {
 	}
 }
 
-statement_node* parse_entire_file(token_array tokens, char *file_name) {
+statement_node* parse_entire_file(token_array tokens, char *file_name, string file_contents) {
 	parser_state state = {
         .tokens = tokens,
         .pos = 0,
         .current_token = tokens.buf[0],
         .file_name = file_name,
+        .file_contents = file_contents,
     };
 
     parser_eat_newlines(&state);
@@ -192,6 +206,7 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
             },
         };
     } else {
+        // parser_advance(state);
         parse_error(state, "Expected ':' or '=' in statement, got %T", state->current_token);
     }
 }

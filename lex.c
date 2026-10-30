@@ -107,7 +107,7 @@ void lex_identifier_or_keyword(string input, uint64_t *i, token *tok) {
 }
 
 token_array lex_entire_file(string input) {
-    token_array tokens = token_array_create();
+    token_array tokens = token_array_create(input);
     uint64_t i = 0;
     while (i < input.length) {
         token tok = { 0 };
@@ -156,4 +156,85 @@ void lex_error(const char *fmt, ...) {
     va_start(args, fmt);
 
     // fprintf(stdout, "%s", buf);
+}
+
+
+
+// Down here is the "reverse lexer"
+
+
+
+// Trying to handle LF, CRLF, and CR but i haven't tested this that thoroughly
+
+// Lines are 1-based
+uint64_t token_to_line_number(string source_code, token tok) {
+    if (tok.file_position >= source_code.length) {
+        panic("Somehow a token thinks it's outside the bounds of a file");
+    }
+
+    uint64_t line_number = 1;
+    // NOTE i < tok.file_position might need to be <= depending on how tok=newline works
+    for (uint64_t i = 0; i < source_code.length - 1 && i < tok.file_position; i++) {
+        if (source_code.buf[i] == '\n') {
+            // LF
+            line_number += 1;
+            continue;
+        }
+        if (source_code.buf[i] == '\r' && source_code.buf[i + 1] == '\n') {
+            // CRLF
+            line_number += 1;
+            i += 1; // Don't double count the '\n' following '\r'
+            continue;
+        }
+        if (source_code.buf[i] == '\r') {
+            // CR
+            line_number += 1;
+            continue;
+        }
+    }
+    return line_number;
+}
+
+string token_to_source_code(string source_code, token tok) {
+    if (tok.file_position >= source_code.length) {
+        panic("Somehow a token thinks it's outside the bounds of a file");
+    }
+    if (tok.file_position == 0) {
+        panic("Somehow the first byte of a file is invalid; the lexer should have caught this already");
+    }
+
+    // If the token whose line we're looking up IS a newline, find the previous
+    // nontrivial line instead.
+    while (source_code.buf[tok.file_position] == '\n' || source_code.buf[tok.file_position] == '\r') {
+        tok.file_position -= 1;
+    }
+
+    // leftward scan for line start
+    uint64_t line_start = tok.file_position;
+    while (line_start > 0 &&
+            source_code.buf[line_start] != '\n' &&
+            source_code.buf[line_start] != '\r') {
+        line_start -= 1;
+    }
+
+    if (source_code.buf[line_start] == '\n') {
+        line_start += 1;
+    }
+
+    // rightward scan for line end
+    uint64_t line_end = tok.file_position;
+    while (source_code.buf[line_end] != '\r'
+            && source_code.buf[line_end] != '\n'
+            && line_end < source_code.length) {
+        line_end += 1;
+    }
+
+    if (line_end <= line_start) {
+        panic("token_to_source_code() this should never happen start=%d end=%d", line_start, line_end);
+    }
+
+    return (string) {
+        .buf = source_code.buf + line_start,
+        .length = line_end - line_start,
+    };
 }

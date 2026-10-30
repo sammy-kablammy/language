@@ -47,11 +47,11 @@ int main(int argc, char **argv) {
     }
     char *main_file_name = argv[arg_idx];
 
-    string contents = read_entire_file(main_file_name);
+    string main_file_contents = read_entire_file(main_file_name);
 
-    token_array tokens = lex_entire_file(contents);
+    token_array tokens = lex_entire_file(main_file_contents);
 
-	statement_node *first_statement = parse_entire_file(tokens, main_file_name);
+	statement_node *first_statement = parse_entire_file(tokens, main_file_name, main_file_contents);
 
     if (pretty_print_and_exit) {
         pretty_print_entire_file(first_statement);
