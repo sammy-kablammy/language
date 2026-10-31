@@ -12,6 +12,10 @@ typedef struct token {
         TOKEN_SLASH = '/',
         TOKEN_COLON = ':',
         TOKEN_DOT = '.',
+        TOKEN_LESS_THAN = '<',
+        TOKEN_GREATER_THAN = '>',
+        TOKEN_LBRACE = '{',
+        TOKEN_RBRACE = '}',
         TOKEN_END_OF_LINE = '\n',
         // multicharacter or non-ascii tokens start above the ascii range:
         TOKEN_IDENTIFIER = 128,
@@ -19,6 +23,11 @@ typedef struct token {
         TOKEN_RETURN,
         TOKEN_TRUE,
         TOKEN_FALSE,
+        TOKEN_LESS_THAN_OR_EQUAL_TO,
+        TOKEN_GREATER_THAN_OR_EQUAL_TO,
+        TOKEN_EQUAL_TO,
+        TOKEN_NOT_EQUAL_TO,
+        TOKEN_WHILE,
     } kind;
     union {
         string identifier; // Only used for identifiers
@@ -100,31 +109,150 @@ void lex_identifier_or_keyword(string input, uint64_t *i, token *tok) {
         tok->kind = TOKEN_FALSE;
         return;
     }
+    if (string_equals_cstring(identifier, "while")) {
+        tok->kind = TOKEN_WHILE;
+        return;
+    }
     // Other keywords go here
 
     tok->kind = TOKEN_IDENTIFIER;
     tok->value.identifier = identifier;
 }
 
+void skip_until(string input, uint64_t *i, char token) {
+	while (input.buf[*i] != token) {
+		if (*i >= input.length) {
+			return;
+		}
+		*i += 1;
+	}
+}
+
+void skip_spaces(string input, uint64_t *i) {
+	while (input.buf[*i] == ' ' || input.buf[*i] == '\t') {
+		if (*i >= input.length) {
+			// realistically this can totally happen in a valid file, where they just have spaces at the end of their file.
+			// optionally warn them to that they have whitespace at the end of the file. but is that our job as the compiler.. hm.
+			// if we want to talk about all these toolchains that are produced and how annoying it is to have to use 3 different
+			// applications to effectively develop, then by all means the compiler should take this responsibility.
+			return;
+		}
+		*i += 1;
+	}
+}
+
 token_array lex_entire_file(string input) {
     token_array tokens = token_array_create(input);
     uint64_t i = 0;
+	int multiline_openers = 0;
     while (i < input.length) {
         token tok = { 0 };
         tok.file_position = i;
         char ch = input.buf[i];
         switch (ch) {
-            // All the single character tokens can be converted directly:
-            case TOKEN_ASSIGN: // fall through
+			case TOKEN_SLASH:
+				multiline_openers = 0;
+				i += 1;
+				if (i >= input.length) {
+					panic("EOF reached while attempting to parsing\n");
+				}
+				else { /* do nothing */ }
+				
+				if (input.buf[i] == TOKEN_SLASH) { // a single line comment
+					skip_until(input, &i, TOKEN_END_OF_LINE);
+					continue;
+				}
+				else if (input.buf[i] == TOKEN_STAR) { // a multi line comment
+					multiline_openers += 1;
+					i += 1;
+					while (multiline_openers > 0) {
+						if (i >= input.length) {
+							panic("EOF reached while parsing multi-line comment.\n");
+						}
+						else { /* do nothing */ }
+						
+						if (input.buf[i] == TOKEN_SLASH) {
+							i += 1;
+							if (i >= input.length) {
+								panic("EOF reached while parsing multi-line comment.\n");
+							}
+							else if (input.buf[i] == TOKEN_SLASH) { // a nested single line comment
+								skip_until(input, &i, TOKEN_END_OF_LINE);
+							}
+							else if (input.buf[i] == TOKEN_STAR) { // a nested multi line comment
+								multiline_openers += 1;
+								i += 1;
+							}
+							else { /* do nothing */ }
+						}
+						else if (input.buf[i] == TOKEN_STAR) {
+							i += 1;
+							if (i >= input.length) {
+								panic("EOF reached while parsing multi-line comment.\n");
+							}
+							else if (input.buf[i] == TOKEN_SLASH) { // end of a multi line comment
+								multiline_openers -= 1;
+								i += 1;
+							}
+							else { /* do nothing */ }
+						}
+						else { // normal part of comment parsed
+							i += 1;
+						}
+					}
+					continue;
+				}
+				else { // not a comment
+					tok.kind = ch;
+					break;
+				}
+			// All the single character tokens can be converted directly:
+			case TOKEN_STAR: // fall through
             case TOKEN_PLUS: // fall through
             case TOKEN_MINUS: // fall through
-            case TOKEN_STAR: // fall through
-            case TOKEN_SLASH: // fall through
             case TOKEN_COLON: // fall through
             case TOKEN_DOT: // fall through
+            case TOKEN_LBRACE: // fall through
+            case TOKEN_RBRACE: // fall through
             case TOKEN_END_OF_LINE:
                 i += 1;
                 tok.kind = ch;
+                break;
+            case '<':
+                i += 1;
+                if (i < input.length && input.buf[i] == '=') {
+                    i += 1;
+                    tok.kind = TOKEN_LESS_THAN_OR_EQUAL_TO;
+                } else {
+                    tok.kind = TOKEN_LESS_THAN;
+                }
+                break;
+            case '>':
+                i += 1;
+                if (i < input.length && input.buf[i] == '=') {
+                    i += 1;
+                    tok.kind = TOKEN_GREATER_THAN_OR_EQUAL_TO;
+                } else {
+                    tok.kind = TOKEN_GREATER_THAN;
+                }
+                break;
+            case '=':
+                i += 1;
+                if (i < input.length && input.buf[i] == '=') {
+                    i += 1;
+                    tok.kind = TOKEN_EQUAL_TO;
+                } else {
+                    tok.kind = TOKEN_ASSIGN;
+                }
+                break;
+            case '!':
+                i += 1;
+                if (i < input.length && input.buf[i] == '=') {
+                    i += 1;
+                    tok.kind = TOKEN_NOT_EQUAL_TO;
+                } else {
+                    panic("! token hasn't been added yet");
+                }
                 break;
             case '0': // fall through
             case '1': // fall through
@@ -140,7 +268,7 @@ token_array lex_entire_file(string input) {
                 break;
 			case ' ': // fall through
 			case '\t':
-				i += 1;
+				skip_spaces(input, &i);
 				continue;
             default:
                 lex_identifier_or_keyword(input, &i, &tok);

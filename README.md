@@ -47,7 +47,8 @@ language features to parse:
 - [ ] function call expressions
   - [ ] array subscript expressions (use `[` instead of `(` for this)
 - [ ] if statements
-- [ ] while loops
+- [ ] loops
+  - [X] while loops
   - [ ] consider for-loop
 - [ ] function declaration expressions
 - [ ] struct declarations
