@@ -27,7 +27,6 @@ int main(int argc, char **argv) {
         arg_idx += 1;
     }
     char *main_file_name = argv[arg_idx];
-
     string contents = read_entire_file(main_file_name);
 
     token_array tokens = lex_entire_file(contents);
