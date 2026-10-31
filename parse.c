@@ -158,13 +158,11 @@ statement_node* parse_entire_file(token_array tokens, char *file_name, string fi
     statement_node *first_statement = NULL;
 	if (state.pos < state.tokens.length) {
 		first_statement = parse_statement(&state);
-        parser_eat_newlines(&state);
     }
 
     statement_node *current_statement = first_statement;
 	while (state.pos < state.tokens.length) {
         current_statement->next = parse_statement(&state);
-        parser_eat_newlines(&state);
         current_statement = current_statement->next;
 	}
 
@@ -228,6 +226,10 @@ statement_node *parse_statement(parser_state *state) {
         default:
             parser_error(state, "Expected statement, got %T", state->current_token);
     }
+    if (state->current_token.kind != TOKEN_END_OF_LINE) {
+        parser_error(state, "Unexpected token %T after end of statement", state->current_token);
+    }
+    parser_eat_newlines(state);
     return stmt;
 }
 
