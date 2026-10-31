@@ -288,22 +288,18 @@ int sprint_token(char *buf, token t) {
         case TOKEN_STAR: // fall through 
         case TOKEN_SLASH: // fall through
         case TOKEN_DOT: // fall through
-			written += sprintf(buf + written, "%c", t.kind);
-			break;
+			return sprintf(buf, "%c", t.kind);
         case TOKEN_END_OF_LINE:
-			written += sprintf(buf + written, "(newline)");
-			break;
+			return sprintf(buf, "(newline)");
 		case TOKEN_IDENTIFIER:
 			written += sprintf(buf + written, "'");
 			written += sprint_string(buf + written, t.value.identifier);
 			written += sprintf(buf + written, "'");
 			break;
 		case TOKEN_INTEGER:
-			written += sprintf(buf + written, "%ld", t.value.integer);
-			break;
+			return sprintf(buf, "%ld", t.value.integer);
 		default:
-			written += sprintf(buf + written, "token read: i have no clue ");
-			break;
+			return sprintf(buf, "token read: i have no clue ");
 	}
     return written;
 }
