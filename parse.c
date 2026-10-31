@@ -6,8 +6,7 @@ typedef struct parser_state {
     string file_contents; // (used for error handling)
 } parser_state;
 
-__attribute__((noreturn))
-void parser_error(parser_state *state, const char *error_message, ...) {
+__attribute__((noreturn)) void parser_error(parser_state *state, const char *error_message, ...) {
     va_list args;
     va_start(args, error_message);
     char error_buffer[10000] = { 0 };
