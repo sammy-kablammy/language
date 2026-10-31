@@ -118,7 +118,6 @@ statement_node *parse_statement(parser_state* state);
 expression_node *parse_expression(parser_state* state, int prev_prec);
 expression_node *parse_leaf(parser_state* state);
 int operator_prec(token t);
-void print_token(token t);
 bool is_operator(token t);
 
 enum {
@@ -139,7 +138,7 @@ int operator_prec(token t) {
 		case TOKEN_DOT:
 			return DOT_PREC;
 		default:
-			print_token(t);
+            compiler_fprintf(stderr, "%T", t);
 			panic(" is not a recognizable operator");
 	}
 }
@@ -307,10 +306,6 @@ int sprint_token(char *buf, token t) {
 			break;
 	}
     return written;
-}
-
-void print_token(token t) {
-    compiler_printf("%T ", t);
 }
 
 bool is_operator(token t) {

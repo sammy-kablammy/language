@@ -2,9 +2,7 @@ void pretty_print_expression(expression_node *expression) {
     switch (expression->kind) {
         case INFIX:
             pretty_print_expression(expression->value.infix.left);
-            printf(" ");
-            print_token(expression->value.infix.operator);
-            // Note: print_token currently prints a space
+            compiler_printf(" %T ", expression->value.infix.operator);
             pretty_print_expression(expression->value.infix.right);
             break;
         case INT:
