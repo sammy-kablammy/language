@@ -352,11 +352,11 @@ int sprint_token(char *buf, token t) {
 		case TOKEN_LESS_THAN_OR_EQUAL_TO:
             return sprintf(buf, "<=");
 		case TOKEN_GREATER_THAN_OR_EQUAL_TO:
-            return printf(buf, ">= ");
+            return sprintf(buf, ">=");
 		case TOKEN_EQUAL_TO:
-            return printf(buf, "== ");
+            return sprintf(buf, "==");
 		case TOKEN_NOT_EQUAL_TO:
-            return printf(buf, "!= ");
+            return sprintf(buf, "!=");
 		default:
 			panic("print_token: unknown token kind=%d", t.kind);
 	}
