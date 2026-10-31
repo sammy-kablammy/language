@@ -198,9 +198,6 @@ string token_to_source_code_line(string source_code, token tok) {
     if (tok.file_position >= source_code.length) {
         panic("Somehow a token thinks it's outside the bounds of a file");
     }
-    if (tok.file_position == 0) {
-        panic("Somehow the first byte of a file is invalid; the lexer should have caught this already");
-    }
 
     // If the token whose line we're looking up IS a newline, find the previous
     // nontrivial line instead.

@@ -230,7 +230,7 @@ statement_node *parse_statement(parser_state *state) {
             *stmt = parse_declaration_or_assignment(state);
             break;
         default:
-            panic("Unrecognized token kind (%d) in parse_statement", state->current_token.kind);
+            parser_error(state, "Expected statement, got %T", state->current_token);
     }
     return stmt;
 }
@@ -302,7 +302,7 @@ int sprint_token(char *buf, token t) {
 			written += sprintf(buf + written, "' ");
 			break;
 		case TOKEN_INTEGER:
-			written += sprintf(buf + written, "'%ld' ", t.value.integer);
+			written += sprintf(buf + written, "%ld ", t.value.integer);
 			break;
 		default:
 			written += sprintf(buf + written, "token read: i have no clue ");

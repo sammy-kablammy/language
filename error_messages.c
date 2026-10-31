@@ -95,8 +95,7 @@ int compiler_vsprintf(char *buf, const char *fmt, va_list args) {
                 buf_pos += sprintf(buf + buf_pos, "%c", va_arg(args, int));
                 break;
             case '%':
-                buf[buf_pos] = '%';
-                buf_pos += 1;
+                buf_pos += sprintf(buf + buf_pos, "%%");
                 break;
             case '\0':
                 panic("Expected conversion code, but reached end of format string '%s'", fmt);
