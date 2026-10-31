@@ -15,7 +15,7 @@
 
 int sprint_token(char *buf, token t);
 
-// Custom vsprintf that supports compiler-specific format strings:
+// Custom vsprintf that supports the following:
 //   %T token
 //   %S struct string (not C strings, those are %s)
 //
