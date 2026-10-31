@@ -8,28 +8,38 @@ typedef struct parser_state {
     string file_contents;
 } parser_state;
 
+// 'error_message' does not need a \n at the end
 __attribute__((noreturn))
-// __attribute__((format(printf, 2, 3)))
-void parse_error(parser_state *state, const char *error_message, ...) {
+void parser_error(parser_state *state, const char *error_message, ...) {
     va_list args;
     va_start(args, error_message);
+    char error_buffer[10000] = { 0 };
+    char *buf = error_buffer;
 
     string source_code = token_to_source_code_line(state->file_contents, state->current_token);
     uint64_t line_number = token_to_line_number(state->file_contents, state->current_token);
     uint64_t column = state->current_token.file_position - (uintptr_t)source_code.buf + (uintptr_t)state->file_contents.buf;
 
-    char buf[10000] = { 0 };
-    uint32_t buf_pos = 0;
-
-    buf_pos += compiler_sprintf(buf + buf_pos, "%s%s%s (%d:%d)%s%s parse error%s: ",
+    buf += compiler_sprintf(buf, "%s%s%s (%d:%d)%s%s parse error%s: ",
             ANSI_BOLD, state->file_name, ANSI_RESET, line_number, column,
             ANSI_RED, ANSI_BOLD, ANSI_RESET, error_message);
-    buf_pos += compiler_vsprintf(buf + buf_pos, error_message, args);
-    buf_pos += compiler_sprintf(buf + buf_pos, "\n  %s%d |%s %S\n",
-            ANSI_BOLD, line_number, ANSI_RESET, source_code);
+    buf += compiler_vsprintf(buf, error_message, args);
+    buf += compiler_sprintf(buf, "\n");
 
-    compiler_fprintf(stderr, "%s", buf);
+    buf += compiler_sprintf(buf, "  %s%s%d |%s %S\n",
+            ANSI_FAINT, ANSI_BOLD, line_number, ANSI_RESET, source_code);
 
+    buf += compiler_sprintf(buf, "  ");
+    for (int digit = line_number; digit > 0; digit /= 10) {
+        buf += compiler_sprintf(buf, " ");
+    }
+    buf += compiler_sprintf(buf, " %s| ", ANSI_FAINT);
+    for (uint64_t i = 0; i < column; i++) {
+        buf += compiler_sprintf(buf, " ");
+    }
+    buf += compiler_sprintf(buf, "^%s\n", ANSI_RESET);
+
+    compiler_fprintf(stderr, "%s", error_buffer);
     va_end(args);
     exit(PARSE_ERROR);
 }
@@ -199,7 +209,7 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
             },
         };
     } else {
-        parse_error(state, "Expected ':' or '=' in statement, got %T", state->current_token);
+        parser_error(state, "Expected ':' or '=' in statement, got %T", state->current_token);
     }
 }
 
@@ -265,7 +275,8 @@ expression_node *parse_leaf(parser_state* state) {
 		leaf->value.bool = false;
 	}
 	else {
-		panic("unrecognized token kind in parse_leaf, got=%d\n", state->current_token.kind);
+		// panic("unrecognized token kind in parse_leaf, got=%d\n", state->current_token.kind);
+        parser_error(state, "Expected expression, got %T", state->current_token);
 	}
     parser_advance(state);
 	return leaf;
@@ -297,7 +308,7 @@ int sprint_token(char *buf, token t) {
 			written += sprintf(buf + written, "token read: i have no clue ");
 			break;
 	}
-    written += sprintf(buf + written, "(tokpos=%lu) ", t.file_position);
+    // written += sprintf(buf + written, "(tokpos=%lu) ", t.file_position);
     return written;
 }
 
