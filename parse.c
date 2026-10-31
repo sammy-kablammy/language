@@ -20,24 +20,25 @@ void parser_error(parser_state *state, const char *error_message, ...) {
     uint64_t line_number = token_to_line_number(state->file_contents, state->current_token);
     uint64_t column = state->current_token.file_position - (uintptr_t)source_code.buf + (uintptr_t)state->file_contents.buf;
 
-    buf += compiler_sprintf(buf, "%s%s%s (%d:%d)%s%s parse error%s: ",
-            ANSI_BOLD, state->file_name, ANSI_RESET, line_number, column,
-            ANSI_RED, ANSI_BOLD, ANSI_RESET, error_message);
+    buf += compiler_sprintf(buf, "%s%s%s ", ANSI_BOLD, state->file_name, ANSI_RESET);
+    buf += compiler_sprintf(buf, "%s(%d:%d)%s", ANSI_FAINT, line_number, column, ANSI_RESET);
+    buf += compiler_sprintf(buf, "%s%s error:%s ", ANSI_RED, ANSI_BOLD, ANSI_RESET);
     buf += compiler_vsprintf(buf, error_message, args);
     buf += compiler_sprintf(buf, "\n");
 
-    buf += compiler_sprintf(buf, "  %s%s%d |%s %S\n",
-            ANSI_FAINT, ANSI_BOLD, line_number, ANSI_RESET, source_code);
+    buf += compiler_sprintf(buf, "  %s%s%d |%s %S", ANSI_FAINT, ANSI_BOLD, line_number, ANSI_RESET, source_code);
+    buf += compiler_sprintf(buf, "\n");
 
     buf += compiler_sprintf(buf, "  ");
     for (int digit = line_number; digit > 0; digit /= 10) {
         buf += compiler_sprintf(buf, " ");
     }
-    buf += compiler_sprintf(buf, " %s| ", ANSI_FAINT);
+    buf += compiler_sprintf(buf, " %s%s| ", ANSI_FAINT, ANSI_BOLD);
     for (uint64_t i = 0; i < column; i++) {
         buf += compiler_sprintf(buf, " ");
     }
-    buf += compiler_sprintf(buf, "^%s\n", ANSI_RESET);
+    buf += compiler_sprintf(buf, "^%s", ANSI_RESET);
+    buf += compiler_sprintf(buf, "\n");
 
     compiler_fprintf(stderr, "%s", error_buffer);
     va_end(args);
@@ -275,7 +276,6 @@ expression_node *parse_leaf(parser_state* state) {
 		leaf->value.bool = false;
 	}
 	else {
-		// panic("unrecognized token kind in parse_leaf, got=%d\n", state->current_token.kind);
         parser_error(state, "Expected expression, got %T", state->current_token);
 	}
     parser_advance(state);

@@ -38,6 +38,9 @@ char error_buffer[100000];
 
 
 // Custom vsprintf that supports compiler-specific format strings.
+// Unfortunately, this also means we can't use the compiler's special printf
+// attribute magic -- if the number of arguments doesn't match the format
+// string, this will segfault.
 //
 // 'buf' should be really big.
 //
