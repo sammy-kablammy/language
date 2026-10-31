@@ -8,8 +8,6 @@
 void print_expression(expression_node e);
 void print_leaves(infix_node* node);
 
-void lex_error(const char *fmt, ...);
-
 int main(int argc, char **argv) {
     if (argc < 2) {
         panic("Usage: '%s <file>'", argv[0]);

@@ -151,22 +151,7 @@ token_array lex_entire_file(string input) {
     return tokens;
 }
 
-void lex_error(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-
-    // fprintf(stdout, "%s", buf);
-}
-
-
-
-// Down here is the "reverse lexer"
-
-
-
-// Trying to handle LF, CRLF, and CR but i haven't tested this that thoroughly
-
-// Lines are 1-based
+// note: lines are 1-based
 uint64_t token_to_line_number(string source_code, token tok) {
     if (tok.file_position >= source_code.length) {
         panic("Somehow a token thinks it's outside the bounds of a file");
@@ -174,19 +159,16 @@ uint64_t token_to_line_number(string source_code, token tok) {
 
     uint64_t line_number = 1;
     for (uint64_t i = 0; i < source_code.length - 1 && i < tok.file_position; i++) {
-        if (source_code.buf[i] == '\n') {
-            // LF
+        if (source_code.buf[i] == '\r' && source_code.buf[i + 1] == '\n') {
             line_number += 1;
+            i += 1; // don't double count the '\n' following the '\r'
             continue;
         }
-        if (source_code.buf[i] == '\r' && source_code.buf[i + 1] == '\n') {
-            // CRLF
+        if (source_code.buf[i] == '\n') {
             line_number += 1;
-            i += 1; // Don't double count the '\n' following '\r'
             continue;
         }
         if (source_code.buf[i] == '\r') {
-            // CR
             line_number += 1;
             continue;
         }
@@ -199,25 +181,22 @@ string token_to_source_code_line(string source_code, token tok) {
         panic("Somehow a token thinks it's outside the bounds of a file");
     }
 
-    // If the token whose line we're looking up IS a newline, find the previous
-    // nontrivial line instead.
+    // An empty line wouldn't make a useful error message, so find the previous
+    // nonempty line instead
     while (source_code.buf[tok.file_position] == '\n' || source_code.buf[tok.file_position] == '\r') {
         tok.file_position -= 1;
     }
 
-    // leftward scan for line start
     uint64_t line_start = tok.file_position;
     while (line_start > 0 &&
             source_code.buf[line_start] != '\n' &&
             source_code.buf[line_start] != '\r') {
         line_start -= 1;
     }
-
     if (source_code.buf[line_start] == '\n' || source_code.buf[line_start] == '\r') {
         line_start += 1;
     }
 
-    // rightward scan for line end
     uint64_t line_end = tok.file_position;
     while (source_code.buf[line_end] != '\r'
             && source_code.buf[line_end] != '\n'
@@ -226,7 +205,7 @@ string token_to_source_code_line(string source_code, token tok) {
     }
 
     if (line_end <= line_start) {
-        panic("token_to_source_code_line: somehow bounds are backwards (%d<=%d)", line_start, line_end);
+        panic("token_to_source_code_line: somehow bounds are backwards (%d<=%d)", line_end, line_start);
     }
 
     return (string) {
