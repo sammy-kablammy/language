@@ -1,3 +1,5 @@
+#define ANSI_RESET "\x1b[0m"
+
 #define ANSI_BOLD "\x1b[1m"
 #define ANSI_FAINT "\x1b[2m"
 #define ANSI_ITALIC "\x1b[3m"
@@ -10,8 +12,6 @@
 #define ANSI_BLUE "\x1b[34m"
 #define ANSI_MAGENTA "\x1b[35m"
 #define ANSI_CYAN "\x1b[36m"
-
-#define ANSI_RESET "\x1b[0m"
 
 int sprint_token(char *buf, token t);
 
