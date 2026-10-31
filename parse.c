@@ -260,12 +260,12 @@ statement_node *parse_statement(parser_state *state) {
             parser_advance(state);
             stmt->value.while_loop.condition = parse_expression(state, MIN_PREC);
             if (state->current_token.kind != TOKEN_LBRACE) {
-                panic("Expected '{' after while-loop condition");
+                parser_error(state, "Expected '{' after while-loop condition", state->current_token);
             }
             parser_advance(state);
             stmt->value.while_loop.body = parse_block(state);
             if (state->current_token.kind != TOKEN_RBRACE) {
-                panic("Expected '}' after while-loop body");
+                parser_error(state, "Expected '}' after while-loop body", state->current_token);
             }
             parser_advance(state);
             break;
