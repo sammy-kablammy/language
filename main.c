@@ -1,7 +1,7 @@
 // This project is a unity build / single compilation unit build.
 #include "platform.c"
 #include "lex.c"
-#include "error_messages.c"
+#include "compiler_printf.c"
 #include "parse.c"
 #include "pretty_print.c"
 
