@@ -15,24 +15,6 @@ int main(int argc, char **argv) {
         panic("Usage: '%s <file>'", argv[0]);
     }
 
-    // token tok = { .kind = TOKEN_PLUS, };
-    // compiler_printf("Token '%T' Yeah %d tokens are cool\n", tok, 100);
-    // string str = { .buf = "Hello", .length = sizeof("Hello") - 1 };
-    // compiler_printf("String '%S' and some percents maybe 100%%%%yup\n", str);
-    // // compiler_printf("Bruh %");
-    //
-    // char buf[10000] = { 0 };;
-    // compiler_sprintf(buf, "String '%S' and tok %T\n", str, tok);
-    // printf("%s\n", buf);
-    //
-    // char buf2[10000] = { 0 };
-    // int written = compiler_sprintf(buf2, "%d", 1234);
-    // printf("written=%d\n", written);
-    //
-    // fflush(stdout);
-    // fflush(stderr);
-    // return 0;
-
     // handle compiler testing arguments (intended for internal use only)
     bool pretty_print_and_exit = false;
     int arg_idx = 1;

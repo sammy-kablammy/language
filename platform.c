@@ -19,13 +19,13 @@ const bool false = 0;
 
 string read_entire_file(const char *filename);
 
-uint32_t sprint_string(char *buf, string str) {
+uint64_t sprint_string(char *buf, string str) {
     uint64_t i = 0;
     while (i < str.length) {
         buf[i] = str.buf[i];
         i += 1;
     }
-    return (uint32_t)i;
+    return i;
 }
 
 void print_string(string str) {

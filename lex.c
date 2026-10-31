@@ -226,7 +226,7 @@ string token_to_source_code_line(string source_code, token tok) {
     }
 
     if (line_end <= line_start) {
-        panic("token_to_source_code() this should never happen start=%d end=%d", line_start, line_end);
+        panic("token_to_source_code_line: somehow bounds are backwards (%d<=%d)", line_start, line_end);
     }
 
     return (string) {

@@ -2,13 +2,10 @@ typedef struct parser_state {
 	token_array tokens;
     uint64_t pos;
     token current_token;
-    // The following are not normally used by the parser, but are needed for
-    // error messages:
-    char *file_name;
-    string file_contents;
+    char *file_name; // (used for error handling)
+    string file_contents; // (used for error handling)
 } parser_state;
 
-// 'error_message' does not need a \n at the end
 __attribute__((noreturn))
 void parser_error(parser_state *state, const char *error_message, ...) {
     va_list args;
@@ -53,7 +50,6 @@ void parser_advance(parser_state *state) {
         panic("Advancing parser to token pos %lu would go out of bounds", state->pos);
     }
     state->current_token = state->tokens.buf[state->pos];
-    // compiler_printf("-- Advancing parser to token %T\n", state->current_token);
 }
 
 void parser_eat_newlines(parser_state *state) {
@@ -308,7 +304,6 @@ int sprint_token(char *buf, token t) {
 			written += sprintf(buf + written, "token read: i have no clue ");
 			break;
 	}
-    // written += sprintf(buf + written, "(tokpos=%lu) ", t.file_position);
     return written;
 }
 
