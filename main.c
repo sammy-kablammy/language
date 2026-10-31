@@ -10,7 +10,8 @@ void print_leaves(infix_node* node);
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        panic("Usage: '%s <file>'", argv[0]);
+        compiler_fprintf(stderr, "Usage: '%s' <file>", argv[0]);
+        exit(GENERIC_COMPILER_ERROR);
     }
 
     // handle compiler testing arguments (intended for internal use only)

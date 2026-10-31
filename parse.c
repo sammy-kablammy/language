@@ -185,7 +185,7 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
         string data_type = state->current_token.value.identifier;
         parser_advance(state);
         if (state->current_token.kind != TOKEN_ASSIGN) {
-            panic("Expected assignment token, got=%d", state->current_token.kind);
+            parser_error(state, "Expected '=' in declaration, got %T", state->current_token);
         }
         parser_advance(state);
         return (statement_node){

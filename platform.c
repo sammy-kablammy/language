@@ -48,6 +48,14 @@ bool string_equals_cstring(string s1, const char *s2) {
     return true;
 }
 
+typedef enum {
+    INTERNAL_COMPILER_ERROR = 1,
+    GENERIC_COMPILER_ERROR,
+    LEX_ERROR,
+    PARSE_ERROR,
+    TYPECHECK_ERROR,
+} exit_code;
+
 __attribute__((noreturn)) void panic(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -57,7 +65,7 @@ __attribute__((noreturn)) void panic(const char *fmt, ...) {
     fprintf(stderr, "\n");
 
     va_end(args);
-    exit(67);
+    exit(INTERNAL_COMPILER_ERROR);
 }
 
 // zero-initializing, unfailable general purpose allocator

@@ -13,12 +13,6 @@
 
 #define ANSI_RESET "\x1b[0m"
 
-typedef enum {
-    LEX_ERROR,
-    PARSE_ERROR,
-    TYPECHECK_ERROR,
-} error_category;
-
 int sprint_token(char *buf, token t);
 
 // Custom vsprintf that supports compiler-specific format strings:
