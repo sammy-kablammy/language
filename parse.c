@@ -289,18 +289,18 @@ int sprint_token(char *buf, token t) {
         case TOKEN_STAR: // fall through 
         case TOKEN_SLASH: // fall through
         case TOKEN_DOT: // fall through
-			written += sprintf(buf + written, "%c ", t.kind);
+			written += sprintf(buf + written, "%c", t.kind);
 			break;
         case TOKEN_END_OF_LINE:
-			written += sprintf(buf + written, "(newline) ");
+			written += sprintf(buf + written, "(newline)");
 			break;
 		case TOKEN_IDENTIFIER:
 			written += sprintf(buf + written, "'");
 			written += sprint_string(buf + written, t.value.identifier);
-			written += sprintf(buf + written, "' ");
+			written += sprintf(buf + written, "'");
 			break;
 		case TOKEN_INTEGER:
-			written += sprintf(buf + written, "%ld ", t.value.integer);
+			written += sprintf(buf + written, "%ld", t.value.integer);
 			break;
 		default:
 			written += sprintf(buf + written, "token read: i have no clue ");
@@ -310,7 +310,7 @@ int sprint_token(char *buf, token t) {
 }
 
 void print_token(token t) {
-    compiler_printf("%T", t);
+    compiler_printf("%T ", t);
 }
 
 bool is_operator(token t) {

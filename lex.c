@@ -181,12 +181,6 @@ string token_to_source_code_line(string source_code, token tok) {
         panic("Somehow a token thinks it's outside the bounds of a file");
     }
 
-    // An empty line wouldn't make a useful error message, so find the previous
-    // nonempty line instead
-    while (source_code.buf[tok.file_position] == '\n' || source_code.buf[tok.file_position] == '\r') {
-        tok.file_position -= 1;
-    }
-
     uint64_t line_start = tok.file_position;
     while (line_start > 0 &&
             source_code.buf[line_start] != '\n' &&
