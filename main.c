@@ -1,5 +1,6 @@
 // This project is a unity build / single compilation unit build.
 #include "platform.c"
+#include "array.c"
 #include "lex.c"
 #include "parse.c"
 #include "pretty_print.c"
@@ -28,7 +29,7 @@ int main(int argc, char **argv) {
 
     token_array tokens = lex_entire_file(contents);
 
-	statement_node *first_statement = parse_entire_file(tokens);
+	statement_node *first_statement = parse_entire_file(&tokens);
 
     if (pretty_print_and_exit) {
         pretty_print_entire_file(first_statement);

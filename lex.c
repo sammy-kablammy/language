@@ -36,31 +36,14 @@ typedef struct token {
     // uint64_t position, // TODO this'll be handy for compiler errors
 } token;
 
-typedef struct token_array {
-    token *buf;
-    uint64_t length;
-    uint64_t capacity;
-} token_array;
-
-token_array token_array_create() {
-    const uint64_t initial_capacity = 10;
-    return (token_array){
-        .buf = xalloc(initial_capacity * sizeof(token)),
-        .length = 0,
-        .capacity = initial_capacity,
-    };
-}
-
+typedef array token_array;
 void token_array_append(token_array *arr, token tok) {
-    if (arr->length + 1 > arr->capacity) {
-        arr->capacity = arr->capacity * 2 + 1;
-        void *new = xalloc(arr->capacity * sizeof(token));
-        memcpy(new, arr->buf, arr->length * sizeof(token));
-        xfree(arr->buf);
-        arr->buf = new;
-    }
-    arr->buf[arr->length] = tok;
-    arr->length += 1;
+    // array_append does a memcpy so even though 'tok' dies after this function,
+    // the data will still be there
+    array_append(arr, &tok);
+}
+token token_array_get(token_array *arr, int i) {
+    return *(token *)array_get(arr, i);
 }
 
 bool is_keyword_character(char ch) {
@@ -142,7 +125,9 @@ void skip_spaces(string input, uint64_t *i) {
 }
 
 token_array lex_entire_file(string input) {
-    token_array tokens = token_array_create();
+    token_array tokens;
+    array_init(&tokens, sizeof(token));
+
     uint64_t i = 0;
 	int multiline_openers = 0;
     while (i < input.length) {
@@ -278,9 +263,9 @@ token_array lex_entire_file(string input) {
     return tokens;
 }
 
-void debug_print_tokens(token_array tokens) {
-    for (uint64_t i = 0; i < tokens.length; i++) {
-        token tok = tokens.buf[i];
+void debug_print_tokens(token_array *tokens) {
+    for (uint64_t i = 0; i < tokens->length; i++) {
+        token tok = token_array_get(tokens, i);
 
         switch (tok.kind) {
             case TOKEN_IDENTIFIER:

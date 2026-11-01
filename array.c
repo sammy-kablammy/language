@@ -3,22 +3,22 @@
 
 typedef struct array {
     void *buf;
-    uint64_t num_elements_allocated;
-    uint64_t num_elements_used;
+    uint64_t capacity;
+    uint64_t length;
     size_t bytes_per_element;
 } array;
 
 const int ARRAY_INITIAL_ELEMENTS = 10;
 
-void array_create(array *arr, size_t bytes_per_element) {
+void array_init(array *arr, size_t bytes_per_element) {
     arr->buf = xalloc(ARRAY_INITIAL_ELEMENTS * bytes_per_element);
-    arr->num_elements_allocated = ARRAY_INITIAL_ELEMENTS;
-    arr->num_elements_used = 0;
+    arr->capacity = ARRAY_INITIAL_ELEMENTS;
+    arr->length = 0;
     arr->bytes_per_element = bytes_per_element;
 }
 
 void *array_get(array *arr, uint64_t idx) {
-    if (idx >= num_elements_used) {
+    if (idx > arr->length) {
         panic("Accessing array at position %lu would go out of bounds", idx);
     }
 
@@ -27,23 +27,23 @@ void *array_get(array *arr, uint64_t idx) {
 }
 
 void array_append(array *arr, void *element) {
-    if (arr->num_elements_used + 1 > arr->num_elements_allocated) {
-        arr->num_elements_allocated = arr->num_elements_allocated * 2 + 1;
-        void *new = xalloc(arr->num_elements_allocated * arr->bytes_per_element);
-        memcpy(new, arr->buf, arr->num_elements_used * arr->bytes_per_element);
+    if (arr->length + 1 > arr->capacity) {
+        arr->capacity = arr->capacity * 2 + 1;
+        void *new = xalloc(arr->capacity * arr->bytes_per_element);
+        memcpy(new, arr->buf, arr->length * arr->bytes_per_element);
         xfree(arr->buf);
         arr->buf = new;
     }
 
-    uint8_t *next_available_spot = (uint8_t *)arr->buf + (arr->num_elements_used * arr->bytes_per_element);
+    uint8_t *next_available_spot = (uint8_t *)arr->buf + (arr->length * arr->bytes_per_element);
     memcpy(next_available_spot, element, arr->bytes_per_element);
 
-    arr->num_elements_used += 1;
+    arr->length += 1;
 }
 
 void array_free_contents(array *arr) {
     xfree(arr->buf);
     arr->buf = NULL;
-    arr->num_elements_allocated = 0;
-    arr->num_elements_used = 0;
+    arr->capacity = 0;
+    arr->length = 0;
 }
