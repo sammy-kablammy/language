@@ -38,8 +38,6 @@ typedef struct token {
 
 typedef array token_array;
 void token_array_append(token_array *arr, token tok) {
-    // array_append does a memcpy so even though 'tok' dies after this function,
-    // the data will still be there
     array_append(arr, &tok);
 }
 token token_array_get(token_array *arr, int i) {

@@ -1,5 +1,5 @@
-// Relative positions are stable (duh, that's what an array is.)
-// Absolute positions are not stable. 
+// Absolute positions are not stable. Do not hold a reference to an array
+// element between resizes.
 
 typedef struct array {
     void *buf;
