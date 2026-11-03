@@ -27,6 +27,10 @@ main :: func(argc: int) {
 
 the following TODOs are organized by compiler phase
 
+the lexer could be hardened a bit more:
+- CRLF line endings
+- unicode support
+
 language features to parse:
 - [ ] string literal expressions
 - [ ] more binary operators

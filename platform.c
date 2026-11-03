@@ -19,6 +19,15 @@ const bool false = 0;
 
 string read_entire_file(const char *filename);
 
+uint64_t sprint_string(char *buf, string str) {
+    uint64_t i = 0;
+    while (i < str.length) {
+        buf[i] = str.buf[i];
+        i += 1;
+    }
+    return i;
+}
+
 void print_string(string str) {
     for (uint64_t i = 0; i < str.length; i++) {
         printf("%c", str.buf[i]);
@@ -66,6 +75,14 @@ string string_from_cstring(char *cstring) {
     };
 }
 
+typedef enum {
+    INTERNAL_COMPILER_ERROR = 1,
+    GENERIC_COMPILER_ERROR,
+    LEX_ERROR,
+    PARSE_ERROR,
+    TYPECHECK_ERROR,
+} exit_code;
+
 __attribute__((noreturn))
 __attribute__((format(printf, 1, 2)))
 void panic(const char *fmt, ...) {
@@ -79,7 +96,7 @@ void panic(const char *fmt, ...) {
     fprintf(stderr, "\n");
 
     va_end(args);
-    exit(67);
+    exit(INTERNAL_COMPILER_ERROR);
 }
 
 // zero-initializing, unfailable general purpose allocator
