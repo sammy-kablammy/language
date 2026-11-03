@@ -19,6 +19,15 @@ const bool false = 0;
 
 string read_entire_file(const char *filename);
 
+uint64_t sprint_string(char *buf, string str) {
+    uint64_t i = 0;
+    while (i < str.length) {
+        buf[i] = str.buf[i];
+        i += 1;
+    }
+    return i;
+}
+
 void print_string(string str) {
     for (uint64_t i = 0; i < str.length; i++) {
         printf("%c", str.buf[i]);
@@ -31,7 +40,11 @@ bool cstring_equals_cstring(char *s1, char *s2) {
 }
 
 bool string_equals_cstring(string s1, const char *s2) {
-    for (uint64_t i = 0; i < s1.length && s2[i] != '\0'; i++) {
+    uint64_t s2_length = strlen(s2);
+    if (s1.length != s2_length) {
+        return false;
+    }
+    for (uint64_t i = 0; i < s1.length && s2_length; i++) {
         if (s1.buf[i] != s2[i]) {
             return false;
         }
@@ -39,16 +52,51 @@ bool string_equals_cstring(string s1, const char *s2) {
     return true;
 }
 
-__attribute__((noreturn)) void panic(const char *fmt, ...) {
+bool string_equals(string s1, string s2) {
+    if (s1.length != s2.length) {
+        return false;
+    }
+    for (uint64_t i = 0; i < s1.length && i < s2.length; i++) {
+        if (s1.buf[i] != s2.buf[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+string string_from_cstring(char *cstring) {
+    int len = 0;
+    while (cstring[len] != '\0') {
+        len += 1;
+    }
+    return (string){
+        .length = len,
+        .buf = cstring,
+    };
+}
+
+typedef enum {
+    INTERNAL_COMPILER_ERROR = 1,
+    GENERIC_COMPILER_ERROR,
+    LEX_ERROR,
+    PARSE_ERROR,
+    TYPECHECK_ERROR,
+} exit_code;
+
+__attribute__((noreturn))
+__attribute__((format(printf, 1, 2)))
+void panic(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
+
+    fflush(stdout); // panic can sometimes beat stdout buffering
 
     fprintf(stderr, "[INTERNAL COMPILER ERROR]\n");
     vfprintf(stderr, fmt, args);
     fprintf(stderr, "\n");
 
     va_end(args);
-    exit(67);
+    exit(INTERNAL_COMPILER_ERROR);
 }
 
 // zero-initializing, unfailable general purpose allocator

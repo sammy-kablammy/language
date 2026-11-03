@@ -6,7 +6,10 @@ main: main.c
 
 test: main
 	./parser_test_cases/test.sh
+	@echo ""
+	./typecheck_test_cases/test.sh
 
 clean:
 	rm $(OUT)
 	rm ./parser_test_cases/*.got
+	rm ./typecheck_test_cases/*.got

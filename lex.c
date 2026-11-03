@@ -33,7 +33,7 @@ typedef struct token {
         string identifier; // Only used for identifiers
         uint64_t integer; // Only used for integers
     } value;
-    // uint64_t position, // TODO this'll be handy for compiler errors
+    uint64_t file_position;
 } token;
 
 typedef array token_array;
@@ -56,21 +56,19 @@ bool is_integer_character(char c) {
 }
 
 // 'i' is an outparam
-token lex_number(string input, uint64_t *i) {
+void lex_number(string input, uint64_t *i, token *tok) {
     uint64_t integer = 0;
     while (*i < input.length && is_integer_character(input.buf[*i])) {
         integer *= 10;
         integer += input.buf[*i] - '0';
         *i += 1;
     }
-    return (token){
-        .kind = TOKEN_INTEGER,
-        .value.integer = integer,
-    };
+    tok->kind = TOKEN_INTEGER;
+    tok->value.integer = integer;
 }
 
 // 'i' is an outparam
-token lex_identifier_or_keyword(string input, uint64_t *i) {
+void lex_identifier_or_keyword(string input, uint64_t *i, token *tok) {
     string identifier = (string){
         .buf = input.buf + *i,
         .length = 0,
@@ -81,23 +79,28 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
     }
 
     if (string_equals_cstring(identifier, "return")) {
-        return (token){ .kind = TOKEN_RETURN };
+        tok->kind = TOKEN_RETURN;
+        return;
     }
     if (string_equals_cstring(identifier, "true")) {
-        return (token){ .kind = TOKEN_TRUE };
+        tok->kind = TOKEN_TRUE;
+        return;
     }
     if (string_equals_cstring(identifier, "false")) {
-        return (token){ .kind = TOKEN_FALSE };
+        tok->kind = TOKEN_FALSE;
+        return;
     }
     if (string_equals_cstring(identifier, "while")) {
-        return (token){ .kind = TOKEN_WHILE };
+        tok->kind = TOKEN_WHILE;
+        return;
     }
     // Other keywords go here
 
-    return (token){
-        .kind = TOKEN_IDENTIFIER,
-        .value.identifier = identifier,
-    };
+    if (identifier.length == 0) {
+        panic("Expected identifier or keyword, got unrecognized character '%c'", input.buf[*i]);
+    }
+    tok->kind = TOKEN_IDENTIFIER;
+    tok->value.identifier = identifier;
 }
 
 void skip_until(string input, uint64_t *i, char token) {
@@ -130,6 +133,7 @@ token_array lex_entire_file(string input) {
 	int multiline_openers = 0;
     while (i < input.length) {
         token tok = { 0 };
+        tok.file_position = i;
         char ch = input.buf[i];
         switch (ch) {
 			case TOKEN_SLASH:
@@ -246,14 +250,14 @@ token_array lex_entire_file(string input) {
             case '7': // fall through
             case '8': // fall through
             case '9': // fall through
-                tok = lex_number(input, &i);
+                lex_number(input, &i, &tok);
                 break;
 			case ' ': // fall through
 			case '\t':
 				skip_spaces(input, &i);
 				continue;
             default:
-                tok = lex_identifier_or_keyword(input, &i);
+                lex_identifier_or_keyword(input, &i, &tok);
                 break;
         }
         token_array_append(&tokens, tok);
@@ -261,25 +265,59 @@ token_array lex_entire_file(string input) {
     return tokens;
 }
 
-void debug_print_tokens(token_array *tokens) {
-    for (uint64_t i = 0; i < tokens->length; i++) {
-        token tok = token_array_get(tokens, i);
+// note: lines are 1-based
+uint64_t token_to_line_number(string source_code, token tok) {
+    if (tok.file_position >= source_code.length) {
+        panic("Somehow a token thinks it's outside the bounds of a file");
+    }
 
-        switch (tok.kind) {
-            case TOKEN_IDENTIFIER:
-                printf("Token kind=identifier value='");
-                print_string(tok.value.identifier);
-                printf("'\n");
-                break;
-            case TOKEN_INTEGER:
-                printf("Token kind=integer value=%lu\n", tok.value.integer);
-                break;
-            case TOKEN_END_OF_LINE:
-                printf("Token (end of line)\n");
-                break;
-            default:
-                printf("Token kind='%c'\n", tok.kind);
-                break;
+    uint64_t line_number = 1;
+    for (uint64_t i = 0; i < source_code.length - 1 && i < tok.file_position; i++) {
+        if (source_code.buf[i] == '\r' && source_code.buf[i + 1] == '\n') {
+            line_number += 1;
+            i += 1; // don't double count the '\n' following the '\r'
+            continue;
+        }
+        if (source_code.buf[i] == '\n') {
+            line_number += 1;
+            continue;
+        }
+        if (source_code.buf[i] == '\r') {
+            line_number += 1;
+            continue;
         }
     }
+    return line_number;
+}
+
+string token_to_source_code_line(string source_code, token tok) {
+    if (tok.file_position >= source_code.length) {
+        panic("Somehow a token thinks it's outside the bounds of a file");
+    }
+
+    uint64_t line_start = tok.file_position;
+    while (line_start > 0 &&
+            source_code.buf[line_start] != '\n' &&
+            source_code.buf[line_start] != '\r') {
+        line_start -= 1;
+    }
+    if (source_code.buf[line_start] == '\n' || source_code.buf[line_start] == '\r') {
+        line_start += 1;
+    }
+
+    uint64_t line_end = tok.file_position;
+    while (source_code.buf[line_end] != '\r'
+            && source_code.buf[line_end] != '\n'
+            && line_end < source_code.length) {
+        line_end += 1;
+    }
+
+    if (line_end <= line_start) {
+        panic("token_to_source_code_line: somehow bounds are backwards (%ld<=%ld)", line_end, line_start);
+    }
+
+    return (string) {
+        .buf = source_code.buf + line_start,
+        .length = line_end - line_start,
+    };
 }

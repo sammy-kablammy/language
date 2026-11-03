@@ -2,7 +2,44 @@ typedef struct parser_state {
 	token_array *tokens;
     uint64_t pos;
     token current_token;
+    char *file_name; // (used for error handling)
+    string file_contents; // (used for error handling)
 } parser_state;
+
+__attribute__((noreturn)) void parser_error(parser_state *state, const char *error_message, ...) {
+    va_list args;
+    va_start(args, error_message);
+    char error_buffer[10000] = { 0 };
+    char *buf = error_buffer;
+
+    string source_code = token_to_source_code_line(state->file_contents, state->current_token);
+    uint64_t line_number = token_to_line_number(state->file_contents, state->current_token);
+    uint64_t column = state->current_token.file_position - (uintptr_t)source_code.buf + (uintptr_t)state->file_contents.buf;
+
+    buf += compiler_sprintf(buf, "%s%s%s ", ANSI_BOLD, state->file_name, ANSI_RESET);
+    buf += compiler_sprintf(buf, "%s(%d:%d)%s", ANSI_FAINT, line_number, column, ANSI_RESET);
+    buf += compiler_sprintf(buf, "%s%s error:%s ", ANSI_RED, ANSI_BOLD, ANSI_RESET);
+    buf += compiler_vsprintf(buf, error_message, args);
+    buf += compiler_sprintf(buf, "\n");
+
+    buf += compiler_sprintf(buf, "  %s%s%d |%s %S", ANSI_FAINT, ANSI_BOLD, line_number, ANSI_RESET, source_code);
+    buf += compiler_sprintf(buf, "\n");
+
+    buf += compiler_sprintf(buf, "  ");
+    for (int digit = line_number; digit > 0; digit /= 10) {
+        buf += compiler_sprintf(buf, " ");
+    }
+    buf += compiler_sprintf(buf, " %s%s| ", ANSI_FAINT, ANSI_BOLD);
+    for (uint64_t i = 0; i < column; i++) {
+        buf += compiler_sprintf(buf, " ");
+    }
+    buf += compiler_sprintf(buf, "^%s", ANSI_RESET);
+    buf += compiler_sprintf(buf, "\n");
+
+    compiler_fprintf(stderr, "%s", error_buffer);
+    va_end(args);
+    exit(PARSE_ERROR);
+}
 
 // To keep current_token in sync, prefer this function instead of accessing
 // parser state directly.
@@ -87,7 +124,6 @@ statement_node *parse_statement(parser_state* state);
 expression_node *parse_expression(parser_state* state, int prev_prec);
 expression_node *parse_leaf(parser_state* state);
 int operator_prec(token t);
-void print_token(token t);
 bool is_operator(token t);
 
 enum {
@@ -116,7 +152,7 @@ int operator_prec(token t) {
 		case TOKEN_NOT_EQUAL_TO:
 			return RELATIONAL_PREC;
 		default:
-			print_token(t);
+            compiler_fprintf(stderr, "%T", t);
 			panic(" is not a recognizable operator");
 	}
 }
@@ -141,11 +177,13 @@ statement_node *parse_block(parser_state *state) {
     return first_statement;
 }
 
-statement_node* parse_entire_file(token_array *tokens) {
+statement_node* parse_entire_file(token_array *tokens, char *file_name, string file_contents) {
 	parser_state state = {
         .tokens = tokens,
         .pos = 0,
         .current_token = token_array_get(tokens, 0),
+        .file_name = file_name,
+        .file_contents = file_contents,
     };
 
     parser_eat_newlines(&state);
@@ -153,13 +191,11 @@ statement_node* parse_entire_file(token_array *tokens) {
     statement_node *first_statement = NULL;
 	if (state.pos < state.tokens->length) {
 		first_statement = parse_statement(&state);
-        parser_eat_newlines(&state);
     }
 
     statement_node *current_statement = first_statement;
 	while (state.pos < state.tokens->length) {
 		current_statement->next = parse_statement(&state);
-		parser_eat_newlines(&state);
 		current_statement = current_statement->next;
 	}
 	return first_statement;
@@ -179,7 +215,7 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
         string data_type = state->current_token.value.identifier;
         parser_advance(state);
         if (state->current_token.kind != TOKEN_ASSIGN) {
-            panic("Expected assignment token, got=%d", state->current_token.kind);
+            parser_error(state, "Expected '=' in declaration, got %T", state->current_token);
         }
         parser_advance(state);
         return (statement_node){
@@ -200,7 +236,7 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
             },
         };
     } else {
-        panic("Expected ':' or '=' in statement, got token kind=%d", state->current_token.kind);
+        parser_error(state, "Expected ':' or '=' in statement, got %T", state->current_token);
     }
 }
 
@@ -224,18 +260,22 @@ statement_node *parse_statement(parser_state *state) {
             parser_advance(state);
             stmt->value.while_loop.condition = parse_expression(state, MIN_PREC);
             if (state->current_token.kind != TOKEN_LBRACE) {
-                panic("Expected '{' after while-loop condition");
+                parser_error(state, "Expected '{' after while-loop condition", state->current_token);
             }
             parser_advance(state);
             stmt->value.while_loop.body = parse_block(state);
             if (state->current_token.kind != TOKEN_RBRACE) {
-                panic("Expected '}' after while-loop body");
+                parser_error(state, "Expected '}' after while-loop body", state->current_token);
             }
             parser_advance(state);
             break;
         default:
-            panic("Unrecognized token kind (%d) in parse_statement", state->current_token.kind);
+            parser_error(state, "Expected statement, got %T", state->current_token);
     }
+    if (state->current_token.kind != TOKEN_END_OF_LINE) {
+        parser_error(state, "Unexpected token %T after end of statement", state->current_token);
+    }
+    parser_eat_newlines(state);
     return stmt;
 }
 
@@ -280,13 +320,14 @@ expression_node *parse_leaf(parser_state* state) {
 		leaf->value.bool = false;
 	}
 	else {
-		panic("unrecognized token kind in parse_leaf, got=%d\n", state->current_token.kind);
+        parser_error(state, "Expected expression, got %T", state->current_token);
 	}
     parser_advance(state);
 	return leaf;
 }
 
-void print_token(token t) {
+int sprint_token(char *buf, token t) {
+    int written = 0;
 	switch (t.kind) {
 		case TOKEN_ASSIGN: // fall through
 		case TOKEN_PLUS: // fall through
@@ -298,35 +339,28 @@ void print_token(token t) {
 		case TOKEN_GREATER_THAN: // fall through
 		case TOKEN_LBRACE: // fall through
 		case TOKEN_RBRACE:
-			printf("%c ", t.kind);
-			break;
+			return sprintf(buf, "%c", t.kind);
         case TOKEN_END_OF_LINE:
-			printf("newline ");
-			break;
+			return sprintf(buf, "(newline)");
 		case TOKEN_IDENTIFIER:
-			printf("'");
-			print_string(t.value.identifier);
-			printf("' ");
+			written += sprintf(buf + written, "'");
+			written += sprint_string(buf + written, t.value.identifier);
+			written += sprintf(buf + written, "'");
 			break;
 		case TOKEN_INTEGER:
-			printf("'%ld' ", t.value.integer);
-			break;
+			return sprintf(buf, "%ld", t.value.integer);
 		case TOKEN_LESS_THAN_OR_EQUAL_TO:
-            printf("<= ");
-            break;
+            return sprintf(buf, "<=");
 		case TOKEN_GREATER_THAN_OR_EQUAL_TO:
-            printf(">= ");
-            break;
+            return sprintf(buf, ">=");
 		case TOKEN_EQUAL_TO:
-            printf("== ");
-            break;
+            return sprintf(buf, "==");
 		case TOKEN_NOT_EQUAL_TO:
-            printf("!= ");
-            break;
+            return sprintf(buf, "!=");
 		default:
 			panic("print_token: unknown token kind=%d", t.kind);
-			break;
 	}
+    return written;
 }
 
 bool is_operator(token t) {

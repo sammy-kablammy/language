@@ -1,0 +1,1 @@
+some_condition: bool = 1 + 1
