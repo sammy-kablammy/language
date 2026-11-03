@@ -1,0 +1,8 @@
+================= TYPE TABLE =================
+| value=   1 | key="int"
+| value=   2 | key="bool"
+=============== END TYPE TABLE ===============
+================= SYMBOL TABLE =================
+| value=   1 | key="two"
+| value=   1 | key="result"
+=============== END SYMBOL TABLE ===============

@@ -115,6 +115,9 @@ void lex_identifier_or_keyword(string input, uint64_t *i, token *tok) {
     }
     // Other keywords go here
 
+    if (identifier.length == 0) {
+        panic("Expected identifier or keyword, got unrecognized character '%c'", input.buf[*i]);
+    }
     tok->kind = TOKEN_IDENTIFIER;
     tok->value.identifier = identifier;
 }
@@ -327,7 +330,7 @@ string token_to_source_code_line(string source_code, token tok) {
     }
 
     if (line_end <= line_start) {
-        panic("token_to_source_code_line: somehow bounds are backwards (%d<=%d)", line_end, line_start);
+        panic("token_to_source_code_line: somehow bounds are backwards (%ld<=%ld)", line_end, line_start);
     }
 
     return (string) {

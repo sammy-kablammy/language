@@ -16,7 +16,7 @@ did_any_fail=''
 
 for test_case_full_name in parser_test_cases/*.lang; do
 
-    heading="Test case $BLUE'$test_case_full_name'$CLEAR\n"
+    heading="Correctly parse $BLUE'$test_case_full_name'$CLEAR\n"
     test_case_basename=$(basename "$test_case_full_name" '.lang')
     got="parser_test_cases/$test_case_basename.got"
 
@@ -28,7 +28,7 @@ for test_case_full_name in parser_test_cases/*.lang; do
 
     ./compiler --pretty-print-and-exit "$test_case_full_name" > "$got"
 
-    if diff -q "$expected" "$got" 2>&1 >/dev/null; then
+    if diff -q "$expected" "$got" >/dev/null 2>&1; then
         printf "$GREEN$BOLD[ PASS ]$CLEAR $heading"
     else
         printf "$RED$BOLD[ FAIL ]$CLEAR $heading"

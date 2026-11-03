@@ -40,6 +40,7 @@ language features to parse:
   - [ ] logical `!`
   - [ ] negation `-`
 - [ ] comments
+- [ ] break / continue keywords
 - [ ] import keyword like `import "filename"`
 - [ ] correctly parse operator precedence
   - [x] infix operators
@@ -51,12 +52,16 @@ language features to parse:
   - [X] while loops
   - [ ] consider for-loop
 - [ ] function declaration expressions
+- [ ] array declarations
 - [ ] struct declarations
+- [ ] allow expressions as the left side of assignments. for example:
+  - `arr[i] = 0`
+  - `mystruct.myfield = 100`
 
 typechecking phase:
 - [X] add builtin type (say bool), so there are at least two types to work with
 - [X] typed declarations `a = b` vs `a: int = b`
-- [ ] basic "does LHS match RHS"
+- [X] basic "does LHS match RHS"
 - [ ] figure out numeric types. signed vs unsigned, floats. see go's untyped
   integer literals and zig's `comptime_int` for reference
 - [ ] string literals
@@ -69,3 +74,10 @@ future
 - bytecode interpreter?? 👀😎
 - optimization
 - machine code output
+- proper error handling
+  - unique exit codes per phase
+  - stdout/stderr distinction
+  - some notion of a string builder for error messages, possibly printf-like
+    with custom conversion codes for strings, enums, and so on
+  - systematic compilation failures. should be able to write negative tests like
+    "this program should fail to type check"
