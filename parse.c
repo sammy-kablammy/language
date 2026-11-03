@@ -1,5 +1,5 @@
 typedef struct parser_state {
-	token_array tokens;
+	token_array *tokens;
     uint64_t pos;
     token current_token;
     char *file_name; // (used for error handling)
@@ -45,14 +45,14 @@ __attribute__((noreturn)) void parser_error(parser_state *state, const char *err
 // parser state directly.
 void parser_advance(parser_state *state) {
     state->pos += 1;
-    if (state->pos > state->tokens.length) {
+    if (state->pos > state->tokens->length) {
         panic("Advancing parser to token pos %lu would go out of bounds", state->pos);
     }
-    state->current_token = state->tokens.buf[state->pos];
+    state->current_token = token_array_get(state->tokens, state->pos);
 }
 
 void parser_eat_newlines(parser_state *state) {
-    while (state->pos < state->tokens.length && state->current_token.kind == TOKEN_END_OF_LINE) {
+    while (state->pos < state->tokens->length && state->current_token.kind == TOKEN_END_OF_LINE) {
         parser_advance(state);
     }
 }
@@ -177,11 +177,11 @@ statement_node *parse_block(parser_state *state) {
     return first_statement;
 }
 
-statement_node* parse_entire_file(token_array tokens, char *file_name, string file_contents) {
+statement_node* parse_entire_file(token_array *tokens, char *file_name, string file_contents) {
 	parser_state state = {
         .tokens = tokens,
         .pos = 0,
-        .current_token = tokens.buf[0],
+        .current_token = token_array_get(tokens, 0),
         .file_name = file_name,
         .file_contents = file_contents,
     };
@@ -189,12 +189,12 @@ statement_node* parse_entire_file(token_array tokens, char *file_name, string fi
     parser_eat_newlines(&state);
 
     statement_node *first_statement = NULL;
-	if (state.pos < state.tokens.length) {
+	if (state.pos < state.tokens->length) {
 		first_statement = parse_statement(&state);
     }
 
     statement_node *current_statement = first_statement;
-	while (state.pos < state.tokens.length) {
+	while (state.pos < state.tokens->length) {
 		current_statement->next = parse_statement(&state);
 		current_statement = current_statement->next;
 	}
