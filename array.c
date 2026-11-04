@@ -21,12 +21,19 @@ void *array_get(array *arr, uint64_t idx) {
     if (idx > arr->length) {
         panic("Accessing array at position %lu would go out of bounds", idx);
     }
+    if (arr->bytes_per_element == 0) {
+        panic("array_get: you forgot to set bytes_per_element");
+    }
 
     uint8_t *element = (uint8_t *)arr->buf + (idx * arr->bytes_per_element);
     return (void *)element;
 }
 
 void array_append(array *arr, void *element) {
+    if (arr->bytes_per_element == 0) {
+        panic("array_append: you forgot to set bytes_per_element");
+    }
+
     if (arr->length + 1 > arr->capacity) {
         arr->capacity = arr->capacity * 2 + 1;
         void *new = xalloc(arr->capacity * arr->bytes_per_element);

@@ -7,6 +7,7 @@
 #include "pretty_print.c"
 #include "hash_table.c"
 #include "typecheck.c"
+#include "bytecodify.c"
 
 void print_expression(expression_node e);
 void print_leaves(infix_node* node);
@@ -56,6 +57,8 @@ int main(int argc, char **argv) {
     }
     symbol_table_free(global_symbols);
     symbol_table_free(global_types);
+
+    bytecodify_entire_program(first_statement);
 
 	return 0;
 }
