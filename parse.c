@@ -93,7 +93,9 @@ struct statement_node {
         DECLARATION,
         ASSIGNMENT,
         WHILE_LOOP,
-		CONDITIONAL,
+		IF,
+		ELSE,
+		ELSE_IF,
         RETURN,
     } kind;
 
@@ -247,6 +249,19 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
     }
 }
 
+// this parses the opening and closing braces and does not set the statement kind
+void parse_conditional_body(statement_node *stmt, parser_state *state) {
+	if (state->current_token.kind != TOKEN_LBRACE) {
+		panic("Expected '{' after if-statement condition");
+	}
+	parser_advance(state);
+	stmt->value.conditional.body = parse_block(state);
+	if (state->current_token.kind != TOKEN_RBRACE) {
+		panic("Expected '}' after if-statement body");
+	}
+	parser_advance(state);
+}
+
 statement_node *parse_statement(parser_state *state) {
     statement_node *stmt = xalloc(sizeof(statement_node));
     switch (state->current_token.kind) {
@@ -276,30 +291,23 @@ statement_node *parse_statement(parser_state *state) {
             }
             parser_advance(state);
             break;
-		case TOKEN_CONDITIONAL:
-			// set the statement to be an if statement
-			stmt->kind = CONDITIONAL;
-			// go to next token (the condition itself)
+		case TOKEN_ELSE:
 			parser_advance(state);
-			// parse the condition
+			if (state->current_token.kind != TOKEN_IF) {
+				stmt->kind = ELSE;
+				parse_conditional_body(stmt, state);
+				break;
+			}
+			stmt->kind = ELSE_IF;
+			parser_advance(state);
 			stmt->value.conditional.condition = parse_expression(state, MIN_PREC);
-			// we should now expect the brace for the if scope
-			if (state->current_token.kind != TOKEN_LBRACE) {
-				panic("Expected '{' after if-statement condition");
-			}
-			// go to next token
+			parse_conditional_body(stmt, state);
+			break;
+		case TOKEN_IF:
+			stmt->kind = IF;
 			parser_advance(state);
-			// recursively parse for more statements here. if a nested if is here, it will
-			// reach this same block of code on a recursed function call. therefore,
-			// the nested if will be captured properly and returned as some chain of fields
-			// in this body field.
-			stmt->value.conditional.body = parse_block(state);
-			// we should now expect the closing brace for the if scope
-			if (state->current_token.kind != TOKEN_RBRACE) {
-				panic("Expected '{' after if-statement body");
-			}
-			// go to next token (either an entirely new statement or an else if / else
-			parser_advance(state);
+			stmt->value.conditional.condition = parse_expression(state, MIN_PREC);
+			parse_conditional_body(stmt, state);
 			break;
         default:
             parser_error(state, "Expected statement, got %T", state->current_token);

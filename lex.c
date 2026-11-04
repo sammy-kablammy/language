@@ -28,7 +28,8 @@ typedef struct token {
         TOKEN_EQUAL_TO,
         TOKEN_NOT_EQUAL_TO,
         TOKEN_WHILE,
-		TOKEN_CONDITIONAL,
+		TOKEN_IF,
+		TOKEN_ELSE,
     } kind;
     union {
         string identifier; // Only used for identifiers
@@ -96,10 +97,12 @@ void lex_identifier_or_keyword(string input, uint64_t *i, token *tok) {
         return;
     }
 	if (string_equals_cstring(identifier, "if")) {
-        return (token){ .kind = TOKEN_CONDITIONAL };
+        tok->kind = TOKEN_IF;
+        return;
     }
 	if (string_equals_cstring(identifier, "else")) {
-        return (token){ .kind = TOKEN_CONDITIONAL };
+        tok->kind = TOKEN_ELSE;
+        return;
     }
     // Other keywords go here
 
