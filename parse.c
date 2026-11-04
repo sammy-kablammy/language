@@ -46,11 +46,17 @@ typedef struct while_loop_node {
     statement_node *body;
 } while_loop_node;
 
+typedef struct conditional_node {
+	expression_node *condition;
+	statement_node *body;
+} conditional_node;
+
 struct statement_node {
     enum {
         DECLARATION,
         ASSIGNMENT,
         WHILE_LOOP,
+		CONDITIONAL,
         RETURN,
     } kind;
 
@@ -58,6 +64,7 @@ struct statement_node {
         declaration_node declaration;
         assignment_node assignment;
         while_loop_node while_loop;
+		conditional_node conditional;
         // This one's a pointer because a return statement may or may not have
         // an expression with it. NULL pointer represents plain return.
         expression_node *maybe_return_expression;
@@ -233,6 +240,32 @@ statement_node *parse_statement(parser_state *state) {
             }
             parser_advance(state);
             break;
+		case TOKEN_CONDITIONAL:
+			// set the statement to be an if statement
+			stmt->kind = CONDITIONAL;
+			// go to next token (the condition itself)
+			parser_advance(state);
+			// parse the condition
+			stmt->value.conditional.condition = parse_expression(state, MIN_PREC);
+			// we should now expect the brace for the if scope
+			if (state->current_token.kind != TOKEN_LBRACE) {
+				panic("Expected '{' after if-statement condition");
+			}
+			// go to next token
+			parser_advance(state);
+			// recursively parse for more statements here. if a nested if is here, it will
+			// reach this same block of code on a recursed function call. therefore,
+			// the nested if will be captured properly and returned as some chain of fields
+			// in this body field.
+			stmt->value.conditional.body = parse_block(state);
+			// we should now expect the closing brace for the if scope
+			if (state->current_token.kind != TOKEN_RBRACE) {
+				panic("Expected '{' after if-statement body");
+			}
+			// go to next token (either an entirely new statement or an else if / else
+			parser_advance(state);
+			}
+			break;
         default:
             panic("Unrecognized token kind (%d) in parse_statement", state->current_token.kind);
     }

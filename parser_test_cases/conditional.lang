@@ -1,0 +1,14 @@
+if true {
+	x: int = 3
+	y: int = 5
+	if y - x > 2 {
+		return false
+	}
+	else {
+		if y - 3 > x {
+			return true
+		}
+		return false
+	}
+}
+return true
