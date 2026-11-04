@@ -28,7 +28,7 @@ typedef struct token {
         TOKEN_EQUAL_TO,
         TOKEN_NOT_EQUAL_TO,
         TOKEN_WHILE,
-		TOKEN_IF,
+		TOKEN_CONDITIONAL,
     } kind;
     union {
         string identifier; // Only used for identifiers
@@ -113,10 +113,10 @@ token lex_identifier_or_keyword(string input, uint64_t *i) {
         return (token){ .kind = TOKEN_WHILE };
     }
 	if (string_equals_cstring(identifier, "if")) {
-        return (token){ .kind = TOKEN_IF };
+        return (token){ .kind = TOKEN_CONDITIONAL };
     }
 	if (string_equals_cstring(identifier, "else")) {
-        return (token){ .kind = TOKEN_IF };
+        return (token){ .kind = TOKEN_CONDITIONAL };
     }
     // Other keywords go here
 
@@ -301,7 +301,7 @@ void debug_print_tokens(token_array tokens) {
             case TOKEN_END_OF_LINE:
                 printf("Token (end of line)\n");
                 break;
-			case TOKEN_IF:
+			case TOKEN_CONDITIONAL:
 				printf("Token kind=keyword 'conditional'\n");
 				break;
 			case TOKEN_RETURN:

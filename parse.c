@@ -264,7 +264,6 @@ statement_node *parse_statement(parser_state *state) {
 			}
 			// go to next token (either an entirely new statement or an else if / else
 			parser_advance(state);
-			}
 			break;
         default:
             panic("Unrecognized token kind (%d) in parse_statement", state->current_token.kind);
