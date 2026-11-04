@@ -11,12 +11,20 @@ typedef struct immediate_s32_instr {
     int32_t the_s32;
 } immediate_s32_instr;
 
+typedef struct add_s32_instr {
+    reg dest;
+    reg op1;
+    reg op2;
+} add_s32_instr;
+
 typedef struct instruction {
     enum {
         IMMEDIATE_S32,
+        ADD_S32,
     } kind; // perhaps should be "opcode"
     union {
         immediate_s32_instr immediate_s32;
+        add_s32_instr add_s32;
     } value;
 } instruction;
 
@@ -41,7 +49,10 @@ void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
         switch (instr.kind) {
             case IMMEDIATE_S32:
                 printf("%ld  |  t%ld = %d\n", i, instr.value.immediate_s32.dest, instr.value.immediate_s32.the_s32);
-            break;
+                break;
+            case ADD_S32:
+                printf("%ld  |  t%ld = t%ld + t%ld\n", i, instr.value.add_s32.dest, instr.value.add_s32.op1, instr.value.add_s32.op2);
+                break;
         }
     }
     cprintf("::: end print snippet\n");
@@ -52,6 +63,37 @@ void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
 // Each bytecodify_* function generates some intermediate registers, and stores
 // the final result in a register. Return the result register so the caller
 // knows where the result is.
+
+reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expression_node *expression);
+
+reg bytecodify_infix_expression(bytecode_snippet *snippet, reg last_used_reg, infix_node infix) {
+    reg lhs_result = bytecodify_expression(snippet, last_used_reg, infix.left);
+    reg rhs_result = bytecodify_expression(snippet, lhs_result, infix.right);
+
+    // NOTE the typecheck phase already verified that types are compatible.
+    // Actually why do we even have the typecheck phase at all then? If we could
+    // typecheck in bytecode instead... hmm...
+    //
+    // TODO this currently assumes that every operator is directly mappable to
+    // single instruction. Perhaps an operator (say struct field access)
+    // requires add then load.
+    reg dest_reg = rhs_result + 1;
+    switch (infix.operator.kind) {
+        case TOKEN_PLUS:
+            append_instruction(snippet, (instruction){
+                    .kind = ADD_S32,
+                    .value.add_s32 = {
+                        .dest = dest_reg,
+                        .op1 = lhs_result,
+                        .op2 = rhs_result,
+                    },
+            });
+            break;
+        default:
+            panic("Unhandled operator (%d) in bytecodify_infix_expression\n", infix.operator.kind);
+    }
+    return dest_reg;
+}
 
 reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expression_node *expression) {
     switch (expression->kind) {
@@ -64,8 +106,9 @@ reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expressi
                 },
             });
             return last_used_reg;
-        // case INFIX:
-        //     break;
+        case INFIX:
+            bytecodify_infix_expression(snippet, last_used_reg, expression->value.infix);
+            break;
         default:
             panic("unhandled expression kind=%d in bytecodify_expression", expression->kind);
     }

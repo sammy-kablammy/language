@@ -68,6 +68,7 @@ typechecking phase:
 - [ ] type inference `who_knows := some_expression_here`
 - [ ] first class types, builtin type called `type`
 - [ ] casting, for inspiration see https://www.gingerbill.org/article/2026/02/23/designing-odins-casting-syntax/
+- [ ] typechecking error messages with cprintf
 
 future
 - bytecode generation
