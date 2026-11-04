@@ -43,7 +43,6 @@ void append_instruction(bytecode_snippet *snippet, instruction instr) {
 // }
 
 void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
-    cprintf("::: Printing snippet\n");
     for (uint64_t i = 0; i < snippet->length; i++) {
         instruction instr = get_instruction(snippet, i);
         switch (instr.kind) {
@@ -55,7 +54,6 @@ void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
                 break;
         }
     }
-    cprintf("::: end print snippet\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -125,7 +123,8 @@ bytecode_snippet bytecodify_top_level_declaration(declaration_node declaration) 
     array_init(&snippet, sizeof(instruction));
 
     reg result_reg = bytecodify_expression(&snippet, REGISTER_INVALID, declaration.expression);
-    compiler_printf("bytecodified a TLD ('%S'), its result is in t%d\n", declaration.identifier, result_reg);
+    // compiler_printf("bytecodified a TLD ('%S'), its result is in t%d\n", declaration.identifier, result_reg);
+    (void)result_reg;
 
     return snippet;
 }
@@ -141,6 +140,13 @@ void bytecodify_entire_program(statement_node *first_statement) {
         if (current->kind != DECLARATION) {
             panic("currently assuming every top level statement is a declaration, got %d", current->kind);
         }
+
+        cprintf("\n");
+        pretty_print_statement(0, current);
+        for (int i = 0; i < 80; i++) {
+            cprintf("=");
+        }
+        cprintf("\n");
 
         bytecode_snippet snippet = bytecodify_top_level_declaration(current->value.declaration);
         debug_print_bytecode_snippet(&snippet);
