@@ -1,2 +1,8 @@
 myfunc = func() {
 }
+diff_func = func() {
+    var = 5
+    anothervar = var + 5
+    return anothervar
+}
+result = diff_func
