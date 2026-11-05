@@ -268,12 +268,12 @@ statement_node *parse_statement(parser_state *state) {
             parser_advance(state);
             stmt->value.while_loop.condition = parse_expression(state, MIN_PREC);
             if (state->current_token.kind != TOKEN_LBRACE) {
-                parser_error(state, "Expected '{' after while-loop condition", state->current_token);
+                parser_error(state, "Expected '{' after while-loop condition");
             }
             parser_advance(state);
             stmt->value.while_loop.body = parse_block(state);
             if (state->current_token.kind != TOKEN_RBRACE) {
-                parser_error(state, "Expected '}' after while-loop body", state->current_token);
+                parser_error(state, "Expected '}' after while-loop body");
             }
             parser_advance(state);
             break;
@@ -332,24 +332,24 @@ expression_node *parse_leaf(parser_state* state) {
         parser_advance(state);
         // expect left parenthesis
         if (state->current_token.kind != TOKEN_LPAREN) {
-            parser_error(state, "Expected '(' after 'func' keyword", state->current_token);
+            parser_error(state, "Expected '(' after 'func' keyword");
         }
         parser_advance(state);
         // expect arguments here
         // expect right parenthesis
         if (state->current_token.kind != TOKEN_RPAREN) {
-            parser_error(state, "Expected ')' after function arguments", state->current_token);
+            parser_error(state, "Expected ')' after function arguments");
         }
         parser_advance(state);
         // expect left brace
         if (state->current_token.kind != TOKEN_LBRACE) {
-            parser_error(state, "Expected '{' after function declaration", state->current_token);
+            parser_error(state, "Expected '{' after function declaration");
         }
         parser_advance(state);
         // expect block of code
         leaf->value.function.body = parse_block(state);
         if (state->current_token.kind != TOKEN_RBRACE) {
-            parser_error(state, "Expected '}' after function body", state->current_token);
+            parser_error(state, "Expected '}' after function body");
         }
     }
 	else {
