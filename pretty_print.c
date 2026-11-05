@@ -38,7 +38,7 @@ void pretty_print_expression(uint32_t num_spaces, expression_node *expression) {
             // print return type here
             printf("{\n");
             // print function body here
-            pretty_print_block(num_spaces, expression->value.function.body);
+            pretty_print_block(num_spaces, expression->value.function_declaration.body);
             printf("}");
             break;
         default:

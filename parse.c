@@ -93,7 +93,6 @@ struct statement_node {
         ASSIGNMENT,
         WHILE_LOOP,
         RETURN,
-        FUNCTION,
     } kind;
 
     union {
@@ -123,7 +122,7 @@ struct expression_node {
         string identifier;
         infix_node infix;
         bool bool;
-        function_node function;
+        function_node function_declaration;
     } value;
 };
 
@@ -347,7 +346,7 @@ expression_node *parse_leaf(parser_state* state) {
         }
         parser_advance(state);
         // expect block of code
-        leaf->value.function.body = parse_block(state);
+        leaf->value.function_declaration.body = parse_block(state);
         if (state->current_token.kind != TOKEN_RBRACE) {
             parser_error(state, "Expected '}' after function body");
         }
