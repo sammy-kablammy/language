@@ -21,6 +21,7 @@ int main(int argc, char **argv) {
     // handle compiler testing arguments (intended for internal use only)
     bool pretty_print_and_exit = false;
     bool typecheck_and_exit = false;
+    bool bytecodify_and_exit = false;
     int arg_idx = 1;
     while (arg_idx < argc - 1) {
         char *arg = argv[arg_idx];
@@ -30,6 +31,8 @@ int main(int argc, char **argv) {
             pretty_print_and_exit = true;
         } else if (cstring_equals_cstring(arg, "--typecheck-and-exit")) {
             typecheck_and_exit = true;
+        } else if (cstring_equals_cstring(arg, "--bytecodify-and-exit")) {
+            bytecodify_and_exit = true;
         }
         arg_idx += 1;
     }
@@ -59,6 +62,7 @@ int main(int argc, char **argv) {
     symbol_table_free(global_types);
 
     bytecodify_entire_program(first_statement);
+    (void)bytecodify_and_exit;
 
 	return 0;
 }

@@ -40,12 +40,6 @@ void append_instruction(bytecode_snippet *snippet, instruction instr) {
     array_append(snippet, &instr);
 }
 
-// NOTE reg will be passed around now. no more state
-// reg new_reg(bytecode_snippet *snippet) {
-//     snippet->last_used_reg += 1;
-//     return snippet->last_used_reg;
-// }
-
 void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
     for (uint64_t i = 0; i < snippet->length; i++) {
         instruction instr = get_instruction(snippet, i);
@@ -54,16 +48,16 @@ void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
                 printf("%ld  |  t%ld = %d\n", i, instr.value.immediate_s32.dest, instr.value.immediate_s32.the_s32);
                 break;
             case ADD_S32:
-                printf("%ld  |  t%ld = t%ld + t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%ld = add_s32 t%ld t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
                 break;
             case SUBTRACT_S32:
-                printf("%ld  |  t%ld = t%ld - t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%ld = subtract_s32 t%ld t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
                 break;
             case MULTIPLY_S32:
-                printf("%ld  |  t%ld = t%ld * t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%ld = multiply_s32 t%ld t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
                 break;
             case DIVIDE_S32:
-                printf("%ld  |  t%ld = t%ld / t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%ld = divide_s32 t%ld t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
                 break;
             case INSTRUCTION_INVALID:
                 panic("you forgot to initialize an instruction kind somewhere");
@@ -127,7 +121,7 @@ reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expressi
             });
             return last_used_reg;
         case INFIX:
-            bytecodify_infix_expression(snippet, last_used_reg, expression->value.infix);
+            return bytecodify_infix_expression(snippet, last_used_reg, expression->value.infix);
             break;
         default:
             panic("unhandled expression kind=%d in bytecodify_expression", expression->kind);
@@ -138,7 +132,7 @@ reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expressi
 
 bytecode_snippet bytecodify_top_level_declaration(declaration_node declaration) {
     if (!string_equals_cstring(declaration.data_type, "int")) {
-        panic("currently assuming TLDs are ints that are evaluable at comptime");
+        panic("currently assuming TLDs are ints");
     }
 
     bytecode_snippet snippet = { 0 };
@@ -165,10 +159,9 @@ void bytecodify_entire_program(statement_node *first_statement) {
 
         cprintf("\n");
         pretty_print_statement(0, current);
-        for (int i = 0; i < 80; i++) {
-            cprintf("=");
-        }
-        cprintf("\n");
+        cprintf("=========================");
+        cprintf(" -> BYTECODE -> ");
+        cprintf("=========================\n");
 
         bytecode_snippet snippet = bytecodify_top_level_declaration(current->value.declaration);
         debug_print_bytecode_snippet(&snippet);
