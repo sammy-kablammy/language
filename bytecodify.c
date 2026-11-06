@@ -6,25 +6,29 @@ const reg REGISTER_INVALID = 0;
 
 typedef uint32_t instruction_id;
 
-typedef struct immediate_s32_instr {
+typedef struct {
     reg dest;
     int32_t the_s32;
 } immediate_s32_instr;
 
-typedef struct add_s32_instr {
+typedef struct {
     reg dest;
     reg op1;
     reg op2;
-} add_s32_instr;
+} reg_op_reg_instr;
 
 typedef struct instruction {
     enum {
+        INSTRUCTION_INVALID = 0,
         IMMEDIATE_S32,
         ADD_S32,
+        SUBTRACT_S32,
+        MULTIPLY_S32,
+        DIVIDE_S32,
     } kind; // perhaps should be "opcode"
     union {
         immediate_s32_instr immediate_s32;
-        add_s32_instr add_s32;
+        reg_op_reg_instr reg_op_reg;
     } value;
 } instruction;
 
@@ -50,8 +54,19 @@ void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
                 printf("%ld  |  t%ld = %d\n", i, instr.value.immediate_s32.dest, instr.value.immediate_s32.the_s32);
                 break;
             case ADD_S32:
-                printf("%ld  |  t%ld = t%ld + t%ld\n", i, instr.value.add_s32.dest, instr.value.add_s32.op1, instr.value.add_s32.op2);
+                printf("%ld  |  t%ld = t%ld + t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
                 break;
+            case SUBTRACT_S32:
+                printf("%ld  |  t%ld = t%ld - t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                break;
+            case MULTIPLY_S32:
+                printf("%ld  |  t%ld = t%ld * t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                break;
+            case DIVIDE_S32:
+                printf("%ld  |  t%ld = t%ld / t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                break;
+            case INSTRUCTION_INVALID:
+                panic("you forgot to initialize an instruction kind somewhere");
         }
     }
 }
@@ -65,32 +80,39 @@ void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
 reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expression_node *expression);
 
 reg bytecodify_infix_expression(bytecode_snippet *snippet, reg last_used_reg, infix_node infix) {
+
     reg lhs_result = bytecodify_expression(snippet, last_used_reg, infix.left);
     reg rhs_result = bytecodify_expression(snippet, lhs_result, infix.right);
 
-    // NOTE the typecheck phase already verified that types are compatible.
-    // Actually why do we even have the typecheck phase at all then? If we could
-    // typecheck in bytecode instead... hmm...
-    //
+    reg_op_reg_instr instr = {
+        .op1 = lhs_result,
+        .op2 = rhs_result,
+        .dest = rhs_result + 1,
+    };
+
     // TODO this currently assumes that every operator is directly mappable to
     // single instruction. Perhaps an operator (say struct field access)
     // requires add then load.
-    reg dest_reg = rhs_result + 1;
+    uint64_t kind = INSTRUCTION_INVALID;
     switch (infix.operator.kind) {
         case TOKEN_PLUS:
-            append_instruction(snippet, (instruction){
-                    .kind = ADD_S32,
-                    .value.add_s32 = {
-                        .dest = dest_reg,
-                        .op1 = lhs_result,
-                        .op2 = rhs_result,
-                    },
-            });
+            kind = ADD_S32;
+            break;
+        case TOKEN_MINUS:
+            kind = SUBTRACT_S32;
+            break;
+        case TOKEN_STAR:
+            kind = MULTIPLY_S32;
+            break;
+        case TOKEN_SLASH:
+            kind = DIVIDE_S32;
             break;
         default:
             panic("Unhandled operator (%d) in bytecodify_infix_expression\n", infix.operator.kind);
     }
-    return dest_reg;
+    append_instruction(snippet, (instruction){ .kind = kind, .value.reg_op_reg = instr });
+
+    return instr.dest;
 }
 
 reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expression_node *expression) {
