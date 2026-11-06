@@ -139,8 +139,7 @@ bytecode_snippet bytecodify_top_level_declaration(declaration_node declaration) 
     array_init(&snippet, sizeof(instruction));
 
     reg result_reg = bytecodify_expression(&snippet, REGISTER_INVALID, declaration.expression);
-    // compiler_printf("bytecodified a TLD ('%S'), its result is in t%d\n", declaration.identifier, result_reg);
-    (void)result_reg;
+    compiler_printf("bytecodified a TLD ('%S'), its result is in t%d\n", declaration.identifier, result_reg);
 
     return snippet;
 }

@@ -61,8 +61,10 @@ int main(int argc, char **argv) {
     symbol_table_free(global_symbols);
     symbol_table_free(global_types);
 
-    bytecodify_entire_program(first_statement);
-    (void)bytecodify_and_exit;
+    if (bytecodify_and_exit) {
+        bytecodify_entire_program(first_statement);
+        return 0;
+    }
 
 	return 0;
 }
