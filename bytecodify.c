@@ -132,7 +132,7 @@ reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expressi
 
 bytecode_snippet bytecodify_top_level_declaration(declaration_node declaration) {
     if (!string_equals_cstring(declaration.data_type, "int")) {
-        panic("currently assuming TLDs are ints");
+        panic("TODO: currently assuming TLDs are ints");
     }
 
     bytecode_snippet snippet = { 0 };
@@ -158,9 +158,9 @@ void bytecodify_entire_program(statement_node *first_statement) {
 
         cprintf("\n");
         pretty_print_statement(0, current);
-        cprintf("=========================");
-        cprintf(" -> BYTECODE -> ");
-        cprintf("=========================\n");
+        cprintf("==============================");
+        cprintf(" BYTECODE ");
+        cprintf("==============================\n");
 
         bytecode_snippet snippet = bytecodify_top_level_declaration(current->value.declaration);
         debug_print_bytecode_snippet(&snippet);
