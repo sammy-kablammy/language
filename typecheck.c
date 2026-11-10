@@ -66,6 +66,7 @@ void symbol_table_free(symbol_table symbols) {
 // const uint32_t NUM_BUILTIN_TYPES = sizeof(builtin_types) / sizeof(builtin_types[0]);
 // // User-defined types will counting after all the builtins
 
+// TODO this should be the same as hash_table_lookup (using an outparam)
 type_info symbol_table_lookup(symbol_table *symbols, string identifier) {
     while (symbols != NULL) {
         type_info out;
@@ -102,11 +103,19 @@ bool type_equals(type_info t1, type_info t2) {
         case TYPE_BOOL:
             return t1.kind == t2.kind;
         // Compound types
+        case TYPE_FUNCTION:
+            if (t1.value.function.argument_types != NULL || t2.value.function.argument_types != NULL) {
+                panic("haven't implemented type checking of function arguments");
+            }
+            if (t1.value.function.return_types != NULL || t2.value.function.return_types != NULL) {
+                panic("haven't implemented type checking of function return types");
+            }
+            return true;
             // TODO
         // Meta
             // TODO
         default:
-            panic("haven't implemented type conversion for these type_info kinds");
+            panic("haven't implemented type conversion for these type_info kinds (%d %d)", t1.kind, t2.kind);
     }
 }
 
@@ -123,8 +132,34 @@ type_info typecheck_infix_expression(symbol_table *symbols, infix_node infix) {
     return lhs_type;
 }
 
-data_type typecheck_expression(symbol_table *symbols, symbol_table *types, expression_node *expression) {
-    data_type type;
+type_info typecheck_function_declaration(symbol_table *symbols, function_node function) {
+
+    type_info type = { .kind = TYPE_FUNCTION };
+    // TODO typecheck arguments (functions can't have arguments yet)
+    // TODO typecheck return expressions (functions can't have return types yet)
+    type.value.function.argument_types = NULL;
+    type.value.function.return_types = NULL;
+
+
+
+    symbol_table child_scope_symbols = symbol_table_alloc();
+    child_scope_symbols.parent = symbols;
+
+    statement_node *statement = function.body;
+    while (statement != NULL) {
+        typecheck_statement(&child_scope_symbols, statement);
+        statement = statement->next;
+    }
+
+    symbol_table_free(child_scope_symbols);
+
+
+
+    return type;
+}
+
+type_info typecheck_expression(symbol_table *symbols, expression_node *expression) {
+    type_info type;
     switch (expression->kind) {
         case INT:
             return (type_info){ .kind = TYPE_INT };
@@ -183,7 +218,7 @@ void typecheck_assignment(symbol_table *symbols, assignment_node assignment) {
 
     type_info rhs_type = typecheck_expression(symbols, assignment.expression);
     if (!type_equals(lhs_type, rhs_type)) {
-        panic("type error: Assignment's RHS type (%d) does not match LHS type (%d)", lhs_type.kind, rhs_type.kind);
+        panic("type error: Assignment's RHS type (%d) does not match LHS type (%d)", rhs_type.kind, lhs_type.kind);
     }
 }
 
@@ -194,6 +229,9 @@ void typecheck_statement(symbol_table *symbols, statement_node *statement) {
             break;
         case ASSIGNMENT:
             typecheck_assignment(symbols, statement->value.assignment);
+            break;
+        case RETURN:
+            // TODO(sam) need a way to pass current function's type_info to typecheck_return
             break;
         default:
             panic("typecheck_statement: unhandled statement kind (%d)", statement->kind);
@@ -223,11 +261,13 @@ void typecheck_entire_program(symbol_table *global_symbols, statement_node *firs
     symbol_table_insert(global_symbols, from_cstr("int"), (type_info){ .kind = TYPE_INT });
     //     ("int" is one possible name for the underlying concept of intness. Other aliases ("myint") may refer to the same underlying type)
     symbol_table_insert(global_symbols, from_cstr("bool"), (type_info){ .kind = TYPE_BOOL });
-    // // Predefined symbols
-    // symbol_table_insert(global_symbols, from_cstr("main"), (type_info){
-    //     .kind = TYPE_FUNCTION,
-    //     .value.function = { .argument_types = NULL, .return_types = NULL },
-    // });
+    // Predefined symbols (if any). for now this is a hack because functions
+    // can only be ASSIGNED, not DECLARED
+    symbol_table_insert(global_symbols, from_cstr("main"), (type_info){
+        .kind = TYPE_FUNCTION,
+        .value.function = { .argument_types = NULL, .return_types = NULL },
+    });
+
     print_symbol_table(global_symbols, "sam");
 
 
