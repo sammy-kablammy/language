@@ -45,17 +45,13 @@ int main(int argc, char **argv) {
     }
 
     symbol_table global_symbols = symbol_table_alloc();
-    symbol_table global_types = symbol_table_alloc();
-    typecheck_entire_program(&global_symbols, &global_types, first_statement);
+    typecheck_entire_program(&global_symbols, first_statement);
     if (typecheck_and_exit) {
-        print_symbol_table(&global_types, "TYPE TABLE");
         print_symbol_table(&global_symbols, "SYMBOL TABLE");
         symbol_table_free(global_symbols);
-        symbol_table_free(global_types);
         return 0;
     }
     symbol_table_free(global_symbols);
-    symbol_table_free(global_types);
 
 	return 0;
 }
