@@ -10,6 +10,7 @@ typedef struct array {
 
 const int ARRAY_INITIAL_ELEMENTS = 10;
 
+// TODO should be array_alloc to mirror hash table naming scheme
 void array_init(array *arr, size_t bytes_per_element) {
     arr->buf = xalloc(ARRAY_INITIAL_ELEMENTS * bytes_per_element);
     arr->capacity = ARRAY_INITIAL_ELEMENTS;

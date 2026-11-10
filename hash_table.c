@@ -1,11 +1,16 @@
-// Really dumb string-to-int hash table. Terrible hash function, linear probing,
-// but can be swapped out later.
+// Really dumb string-to-blob hash table. Terrible hash function, linear
+// probing, but can be swapped out later.
 
 const int HASH_TABLE_INITIAL_ELEMENTS = 8;
 
 typedef struct hash_entry {
     string key;
-    uint32_t value;
+    // void *value;
+    uint8_t value[128]; // Arbitrarily chosen to be a big number, larger than
+                        // any actual value would be. this is imperfect but i
+                        // don't want to have any macro magic. Alternative is to
+                        // have a separate buffer 'hash_table.values' to go with
+                        // the existing 'entries' buffer
     bool is_used;
 } hash_entry;
 
@@ -13,6 +18,7 @@ typedef struct hash_table {
     hash_entry *entries;
     int num_entries_allocated;
     int num_entries_used;
+    size_t bytes_per_element;
 } hash_table;
 
 int hash(string key) {
@@ -25,20 +31,21 @@ int hash(string key) {
 }
 
 // Remember to call hash_table_free
-hash_table hash_table_alloc() {
+hash_table hash_table_alloc(size_t bytes_per_element) {
     return (hash_table){
         .num_entries_allocated = HASH_TABLE_INITIAL_ELEMENTS,
         .num_entries_used = 0,
         .entries = xalloc(HASH_TABLE_INITIAL_ELEMENTS * sizeof(hash_entry)),
+        .bytes_per_element = bytes_per_element,
     };
 }
 
-void hash_table_insert(hash_table *table, string key, uint32_t value) {
+void hash_table_insert(hash_table *table, string key, void *value) {
     int position = hash(key) % table->num_entries_allocated;
     while (table->entries[position].is_used) {
         if (string_equals(key, table->entries[position].key)) {
             // Found existing; update instead of insert
-            table->entries[position].value = value;
+            memcpy(&table->entries[position].value, value, table->bytes_per_element);
             return;
         }
         position = (position + 1) % table->num_entries_allocated;
@@ -47,8 +54,8 @@ void hash_table_insert(hash_table *table, string key, uint32_t value) {
     table->entries[position] = (hash_entry){
         .is_used = true,
         .key = key,
-        .value = value,
     };
+    memcpy(&table->entries[position].value, value, table->bytes_per_element);
     table->num_entries_used += 1;
 
     if (table->num_entries_used < table->num_entries_allocated / 2) {
@@ -74,7 +81,7 @@ bool hash_table_lookup(hash_table *table, string key, uint32_t *out) {
     while (table->entries[position].is_used) {
         hash_entry entry = table->entries[position];
         if (string_equals(key, entry.key)) {
-            *out = entry.value;
+            memcpy(out, entry.value, table->bytes_per_element);
             return true;
         }
         position = (position + 1) % table->num_entries_allocated;
@@ -93,7 +100,7 @@ void hash_table_print(hash_table table, const char *name) {
     for (int i = 0; i < table.num_entries_allocated; i++) {
         hash_entry entry = table.entries[i];
         if (entry.is_used) {
-            printf("| value=%4u | key=\"", entry.value);
+            printf("| value=%4lu | key=\"", (uintptr_t)entry.value);
             print_string(entry.key);
             printf("\"\n");
         }
