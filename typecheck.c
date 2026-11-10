@@ -240,7 +240,7 @@ void typecheck_statement(symbol_table *symbols, statement_node *statement) {
 
 #define from_cstr string_from_cstring
 
-void print_symbol_table(symbol_table *symbols, char *name);
+void print_symbol_table(symbol_table *symbols);
 
 void typecheck_entire_program(symbol_table *global_symbols, statement_node *first_statement) {
     // Start counting types at 1, since 0 represents TYPE_INVALID
@@ -268,7 +268,7 @@ void typecheck_entire_program(symbol_table *global_symbols, statement_node *firs
         .value.function = { .argument_types = NULL, .return_types = NULL },
     });
 
-    print_symbol_table(global_symbols, "sam");
+    // print_symbol_table(global_symbols);
 
 
 
@@ -279,6 +279,29 @@ void typecheck_entire_program(symbol_table *global_symbols, statement_node *firs
     }
 }
 
-void print_symbol_table(symbol_table *symbols, char *name) {
-    hash_table_print(symbols->table,name);
+void print_type_info(void *info) {
+    type_info t = *(type_info *)info;
+    cprintf("Type info ");
+    switch (t.kind) {
+        case TYPE_INVALID:
+            cprintf("(invalid type, this shouldn't be here)");
+            break;
+        case TYPE_INT:
+            cprintf("int");
+            break;
+        case TYPE_BOOL:
+            cprintf("bool");
+            break;
+        case TYPE_FUNCTION:
+            cprintf("function");
+            // print argument types here
+            // print return types here
+            break;
+        default:
+            panic("unhandled type_info kind (%d)", t.kind);
+    }
+}
+
+void print_symbol_table(symbol_table *symbols) {
+    hash_table_print(symbols->table, "Symbol table", print_type_info);
 }

@@ -32,6 +32,11 @@ int hash(string key) {
 
 // Remember to call hash_table_free
 hash_table hash_table_alloc(size_t bytes_per_element) {
+    hash_entry dummy;
+    if (bytes_per_element >= sizeof(dummy.value)) {
+        panic("exceeded hardcoded size for hash_entry values");
+    }
+
     return (hash_table){
         .num_entries_allocated = HASH_TABLE_INITIAL_ELEMENTS,
         .num_entries_used = 0,
@@ -95,14 +100,14 @@ void hash_table_free(hash_table table) {
     xfree(table.entries);
 }
 
-void hash_table_print(hash_table table, const char *name) {
+void hash_table_print(hash_table table, const char *name, void (*print_element)(void *element)) {
     printf("================= %s =================\n", name);
     for (int i = 0; i < table.num_entries_allocated; i++) {
         hash_entry entry = table.entries[i];
         if (entry.is_used) {
-            printf("| value=%4lu | key=\"", (uintptr_t)entry.value);
-            print_string(entry.key);
-            printf("\"\n");
+            cprintf("| key=\"%S\" | ", entry.key);
+            print_element(entry.value);
+            cprintf("\n");
         }
     }
     printf("=============== END %s ===============\n", name);
