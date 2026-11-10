@@ -1,8 +1,7 @@
-================= TYPE TABLE =================
-| value=   1 | key="int"
-| value=   2 | key="bool"
-=============== END TYPE TABLE ===============
-================= SYMBOL TABLE =================
-| value=   1 | key="two"
-| value=   1 | key="result"
-=============== END SYMBOL TABLE ===============
+================= Symbol table =================
+| key="main" | type_info function
+| key="two" | type_info int
+| key="int" | type_info int
+| key="bool" | type_info bool
+| key="result" | type_info int
+=============== END Symbol table ===============

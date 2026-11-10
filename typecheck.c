@@ -31,7 +31,7 @@ typedef struct type_info {
         // void *primitive; // Primitive types don't have any other info
         function_type_info function;
         struct_type_info structure;
-        struct type_info *underlying_type; // Only used for TYPE_TYPE (this is so meta)
+        // struct type_info *underlying_type; // Only used for TYPE_TYPE (this is so meta)
     } value;
     // bool is_constant; // TODO(sam) differentiate between constants and variables
                          // Actually, constness is really an aspect of a
@@ -80,13 +80,7 @@ type_info symbol_table_lookup(symbol_table *symbols, string identifier) {
 }
 
 void symbol_table_insert(symbol_table *symbols, string identifier, type_info info) {
-    // TODO(sam) should check here whether identifier is already taken
-    // if (hash_table_lookup()) {
-    // panic()
-    // }
-    // cprintf("Inserting '%S' into hash table\n", identifier);
     hash_table_insert(&symbols->table, identifier, (void *)&info);
-    // cprintf("Inserted '%S'\n", identifier);
 }
 
 // TODO(sam) should this be a deep equals? depends whether we want duck typing i 'pose
@@ -281,7 +275,6 @@ void typecheck_entire_program(symbol_table *global_symbols, statement_node *firs
 
 void print_type_info(void *info) {
     type_info t = *(type_info *)info;
-    cprintf("Type info ");
     switch (t.kind) {
         case TYPE_INVALID:
             cprintf("(invalid type, this shouldn't be here)");
