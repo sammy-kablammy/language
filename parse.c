@@ -86,6 +86,7 @@ typedef struct while_loop_node {
 typedef struct conditional_node {
 	expression_node *condition;
 	statement_node *body;
+    statement_node *alt_body; // not guaranteed to be non-null
 } conditional_node;
 
 struct statement_node {
@@ -93,9 +94,7 @@ struct statement_node {
         DECLARATION,
         ASSIGNMENT,
         WHILE_LOOP,
-		IF,
-		ELSE,
-		ELSE_IF,
+		CONDITIONAL,
         RETURN,
     } kind;
 
@@ -249,15 +248,23 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
     }
 }
 
-// this parses the opening and closing braces and does not set the statement kind
+// this parses the opening and closing braces
 void parse_conditional_body(statement_node *stmt, parser_state *state) {
-	if (state->current_token.kind != TOKEN_LBRACE) {
-		panic("Expected '{' after if-statement condition");
+    // expect something along the lines of:
+    //      if () ... { } else { <--
+    //      if () ... { } else if <--
+	if (state->current_token.kind == TOKEN_LBRACE) {
+		parser_advance(state);
 	}
-	parser_advance(state);
+    else if (state->current_token.kind == TOKEN_IF) {
+        // dont skip this token, but don't crash either
+    }
+    else {
+        parser_error(state, "Expected '{' or 'if' after conditional statement");
+    }
 	stmt->value.conditional.body = parse_block(state);
 	if (state->current_token.kind != TOKEN_RBRACE) {
-		panic("Expected '}' after if-statement body");
+		panic("Expected '}' after conditional body");
 	}
 	parser_advance(state);
 }
@@ -291,24 +298,25 @@ statement_node *parse_statement(parser_state *state) {
             }
             parser_advance(state);
             break;
-		case TOKEN_ELSE:
-			parser_advance(state);
-			if (state->current_token.kind != TOKEN_IF) {
-				stmt->kind = ELSE;
-				parse_conditional_body(stmt, state);
-				break;
-			}
-			stmt->kind = ELSE_IF;
-			parser_advance(state);
-			stmt->value.conditional.condition = parse_expression(state, MIN_PREC);
-			parse_conditional_body(stmt, state);
-			break;
 		case TOKEN_IF:
-			stmt->kind = IF;
-			parser_advance(state);
+            stmt->kind = CONDITIONAL;
+            parser_advance(state);
 			stmt->value.conditional.condition = parse_expression(state, MIN_PREC);
 			parse_conditional_body(stmt, state);
-			break;
+            parser_eat_newlines(state);
+            // capture any potential elses since they shouldnt count as their own statement
+            if (state->current_token.kind == TOKEN_ELSE) {
+                //printf("found an else\n");
+                parser_advance(state);
+                statement_node *temp_body = stmt->value.conditional.body;
+                parse_conditional_body(stmt, state);
+                stmt->value.conditional.alt_body = stmt->value.conditional.body;
+                stmt->value.conditional.body = temp_body;
+                parser_eat_newlines(state);
+            }
+			return stmt;
+        case TOKEN_ELSE:
+            parser_error(state, "Unrecognized syntax: else statement with no preceding if statement.");
         default:
             parser_error(state, "Expected statement, got %T", state->current_token);
     }
@@ -389,6 +397,8 @@ int sprint_token(char *buf, token t) {
 			break;
 		case TOKEN_INTEGER:
 			return sprintf(buf, "%ld", t.value.integer);
+        case TOKEN_RETURN:
+            return sprintf(buf, "return");
 		case TOKEN_LESS_THAN_OR_EQUAL_TO:
             return sprintf(buf, "<=");
 		case TOKEN_GREATER_THAN_OR_EQUAL_TO:
