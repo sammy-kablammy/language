@@ -302,19 +302,41 @@ statement_node *parse_statement(parser_state *state) {
             stmt->kind = CONDITIONAL;
             parser_advance(state);
 			stmt->value.conditional.condition = parse_expression(state, MIN_PREC);
-			parse_conditional_body(stmt, state);
+            if (state->current_token.kind != TOKEN_LBRACE) {
+                parser_error(state, "Expected '{' after if-statement condition", state->current_token);
+            }
+            parser_advance(state);
+			stmt->value.conditional.body = parse_block(state);
+            if (state->current_token.kind != TOKEN_RBRACE) {
+                parser_error(state, "Expected '}' after if-statement body", state->current_token);
+            }
+            parser_advance(state);
+            if (state->current_token.kind != TOKEN_END_OF_LINE && state->current_token.kind != TOKEN_ELSE) {
+                parser_error(state, "Expected new line or else before next statement");
+            }
             parser_eat_newlines(state);
             // capture any potential elses since they shouldnt count as their own statement
             if (state->current_token.kind == TOKEN_ELSE) {
-                //printf("found an else\n");
                 parser_advance(state);
-                statement_node *temp_body = stmt->value.conditional.body;
-                parse_conditional_body(stmt, state);
-                stmt->value.conditional.alt_body = stmt->value.conditional.body;
-                stmt->value.conditional.body = temp_body;
-                parser_eat_newlines(state);
+                // else {
+                if (state->current_token.kind == TOKEN_LBRACE) {
+                    parser_advance(state);
+                    stmt->value.conditional.alt_body = parse_block(state);
+                    if (state->current_token.kind != TOKEN_RBRACE) {
+                        parser_error(state, "Expected '}' after else body", state->current_token);
+                    }
+                    parser_advance(state);
+                }
+                // else if
+                else if (state->current_token.kind == TOKEN_IF) {
+                    stmt->value.conditional.alt_body = parse_statement(state);
+                }
+                else {
+                    parser_error(state, "Unexpected syntax after else keyword: '%T'", state->current_token);
+                }
             }
-			return stmt;
+            parser_eat_newlines(state);
+            return stmt;
         case TOKEN_ELSE:
             parser_error(state, "Unrecognized syntax: else statement with no preceding if statement.");
         default:
