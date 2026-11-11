@@ -87,9 +87,6 @@ bool type_equals(type_info t1, type_info t2) {
     if (t1.kind != t2.kind) {
         return false;
     }
-    if (t1.kind == TYPE_INT || t1.kind == TYPE_BOOL) {
-        return true;
-    }
     switch (t1.kind) {
         // Primitive types
         case TYPE_INT: // fall through
