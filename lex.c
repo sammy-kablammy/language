@@ -133,8 +133,7 @@ void skip_spaces(string input, uint64_t *i) {
 }
 
 token_array lex_entire_file(string input) {
-    token_array tokens;
-    array_init(&tokens, sizeof(token));
+    token_array tokens = array_alloc(sizeof(token));
 
     uint64_t i = 0;
 	int multiline_openers = 0;

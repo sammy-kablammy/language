@@ -241,8 +241,7 @@ void typecheck_statement(typecheck_state *state, statement_node *statement) {
 void typecheck_entire_program(symbol_table *global_symbols, statement_node *first_statement) {
 
     // populate builtin types
-    type_info_array global_type_infos;
-    array_init(&global_type_infos, sizeof(type_info));
+    type_info_array global_type_infos = array_alloc(sizeof(type_info));
     type_info_array_append(&global_type_infos, (type_info){ .kind = TYPE_INVALID }); // (TYPE_INFO_ID_INVALID)
     const type_info_id int_id = type_info_array_append(&global_type_infos, (type_info){ .kind = TYPE_INT });
     // printf("int_id=%d\n", int_id);

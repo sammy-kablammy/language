@@ -10,11 +10,13 @@ typedef struct array {
 
 const int ARRAY_INITIAL_ELEMENTS = 10;
 
-void array_init(array *arr, size_t bytes_per_element) {
-    arr->buf = xalloc(ARRAY_INITIAL_ELEMENTS * bytes_per_element);
-    arr->capacity = ARRAY_INITIAL_ELEMENTS;
-    arr->length = 0;
-    arr->bytes_per_element = bytes_per_element;
+array array_alloc(size_t bytes_per_element) {
+    return (array){
+        .buf = xalloc(ARRAY_INITIAL_ELEMENTS * bytes_per_element),
+        .capacity = ARRAY_INITIAL_ELEMENTS,
+        .length = 0,
+        .bytes_per_element = bytes_per_element,
+    };
 }
 
 void *array_get(array *arr, uint64_t idx) {
