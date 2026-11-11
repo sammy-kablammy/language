@@ -11,19 +11,17 @@ typedef struct {
 typedef struct type_info {
     enum {
         TYPE_INVALID = 0,
+
         // primitives
         TYPE_INT,
         TYPE_BOOL,
+
         // compound types
         TYPE_FUNCTION,
-        TYPE_STRUCT,
-        // TYPE_STATIC_ARRAY, // could have 'kind' and 'size' for example { TYPE_INT, 100 }
+        // TYPE_STRUCT,
+
         // meta
         TYPE_TYPE,
-        // Note there is no concept of "safe range" for user defined types. User
-        // defined types are always kind=TYPE_TYPE and point to a particular
-        // underlying type. We're not generating *new* types anywhere, only
-        // providing wrappers for existing types.
     } kind;
     union {
         // void *primitive; // Primitive types don't have any other info
@@ -31,7 +29,7 @@ typedef struct type_info {
         // struct_type_info structure;
         type_info_id id_of_underlying_type; // Only used for TYPE_TYPE (this is so meta)
     } value;
-    // struct type_info *next; // Will be used for function arguments
+    // type_info_id next; // to be used for function arguments
 } type_info;
 
 typedef array type_info_array;
@@ -291,10 +289,7 @@ void print_type_info(void *info) {
             // print return types here
             break;
         case TYPE_TYPE:
-            cprintf("type whose underlying type is (");
-            // print_type_info(t->value.id_of_underlying_type);
-            cprintf("(todo print this)");
-            cprintf(")");
+            cprintf("type whose underlying ID is (%d)", t->value.id_of_underlying_type);
             break;
         default:
             panic("unhandled type_info kind (%d)", t->kind);

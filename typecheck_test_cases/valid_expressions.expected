@@ -1,7 +1,5 @@
 ================= Symbol table =================
-| key="main" | type_info function
-| key="two" | type_info int
-| key="int" | type_info int
-| key="bool" | type_info bool
-| key="result" | type_info int
+| key="int" | type whose underlying ID is (1)
+| key="bool" | type whose underlying ID is (2)
+| key="main" | function
 =============== END Symbol table ===============
