@@ -288,8 +288,6 @@ void print_type_info(void *info) {
         case TYPE_TYPE:
             cprintf("type whose underlying ID is (%d)", t->value.id_of_underlying_type);
             break;
-        default:
-            panic("unhandled type_info kind (%d)", t->kind);
     }
 }
 
