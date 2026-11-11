@@ -248,27 +248,6 @@ statement_node parse_declaration_or_assignment(parser_state *state) {
     }
 }
 
-// this parses the opening and closing braces
-void parse_conditional_body(statement_node *stmt, parser_state *state) {
-    // expect something along the lines of:
-    //      if () ... { } else { <--
-    //      if () ... { } else if <--
-	if (state->current_token.kind == TOKEN_LBRACE) {
-		parser_advance(state);
-	}
-    else if (state->current_token.kind == TOKEN_IF) {
-        // dont skip this token, but don't crash either
-    }
-    else {
-        parser_error(state, "Expected '{' or 'if' after conditional statement");
-    }
-	stmt->value.conditional.body = parse_block(state);
-	if (state->current_token.kind != TOKEN_RBRACE) {
-		panic("Expected '}' after conditional body");
-	}
-	parser_advance(state);
-}
-
 statement_node *parse_statement(parser_state *state) {
     statement_node *stmt = xalloc(sizeof(statement_node));
     switch (state->current_token.kind) {
