@@ -82,10 +82,7 @@ void pretty_print_statement(uint32_t num_spaces, statement_node *statement) {
             if (statement->value.conditional.alt_body != NULL) {
                 printf("\n");
                 print_spaces(num_spaces);
-                printf("else ");
-                if (statement->value.conditional.alt_body->kind != CONDITIONAL) {
-                    printf("{\n");
-                }
+                printf("else {\n");
                 pretty_print_block(num_spaces + INDENT_AMOUNT, statement->value.conditional.alt_body);
                 print_spaces(num_spaces);
                 printf("}");
