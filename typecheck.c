@@ -1,14 +1,12 @@
 struct type_info;
+typedef uint32_t type_info_id;
+const type_info_id TYPE_INFO_ID_INVALID = 0;
 
 typedef struct {
-    struct type_info *argument_types;
-    struct type_info *return_types;
+    // there could be 0, 1, or many argument or return types
+    type_info_id argument_types;
+    type_info_id return_types;
 } function_type_info;
-
-typedef struct {
-    // TODO
-    struct type_info *members;
-} struct_type_info;
 
 typedef struct type_info {
     enum {
@@ -30,14 +28,22 @@ typedef struct type_info {
     union {
         // void *primitive; // Primitive types don't have any other info
         function_type_info function;
-        struct_type_info structure;
-        // struct type_info *underlying_type; // Only used for TYPE_TYPE (this is so meta)
+        // struct_type_info structure;
+        type_info_id id_of_underlying_type; // Only used for TYPE_TYPE (this is so meta)
     } value;
-    // bool is_constant; // TODO(sam) differentiate between constants and variables
-                         // Actually, constness is really an aspect of a
-                         // particular declaration, not of the type itself.
-    struct type_info *next; // type_infos can be made into an intrusive list, for function arguments and stuff
+    // struct type_info *next; // Will be used for function arguments
 } type_info;
+
+typedef array type_info_array;
+// Return the ID of whatever was just appended
+type_info_id type_info_array_append(type_info_array *arr, type_info info) {
+    array_append(arr, &info);
+    return arr->length - 1;
+}
+type_info type_info_array_get(type_info_array *arr, type_info_id id) {
+    void *element = array_get(arr, id);
+    return *(type_info *)element;
+}
 
 // Symbol table maps identifiers to types for a given scope
 typedef struct symbol_table {
@@ -56,16 +62,6 @@ void symbol_table_free(symbol_table symbols) {
     hash_table_free(symbols.table);
 }
 
-// typedef uint32_t data_type;
-// const data_type TYPE_INVALID = 0;
-// string builtin_types[] = {
-//     // I don't like this but eh
-//     { .buf = "int", .length = sizeof("int") - 1 },
-//     { .buf = "bool", .length = sizeof("bool") - 1 },
-// };
-// const uint32_t NUM_BUILTIN_TYPES = sizeof(builtin_types) / sizeof(builtin_types[0]);
-// // User-defined types will counting after all the builtins
-
 // TODO this should be the same as hash_table_lookup (using an outparam)
 type_info symbol_table_lookup(symbol_table *symbols, string identifier) {
     while (symbols != NULL) {
@@ -83,6 +79,11 @@ void symbol_table_insert(symbol_table *symbols, string identifier, type_info inf
     hash_table_insert(&symbols->table, identifier, (void *)&info);
 }
 
+typedef struct {
+    symbol_table *symbols;
+    type_info_array *global_type_infos;
+} typecheck_state;
+
 // TODO(sam) should this be a deep equals? depends whether we want duck typing i 'pose
 bool type_equals(type_info t1, type_info t2) {
     if (t1.kind != t2.kind) {
@@ -98,53 +99,55 @@ bool type_equals(type_info t1, type_info t2) {
             return t1.kind == t2.kind;
         // Compound types
         case TYPE_FUNCTION:
-            if (t1.value.function.argument_types != NULL || t2.value.function.argument_types != NULL) {
+            if (t1.value.function.argument_types != TYPE_INFO_ID_INVALID || t2.value.function.argument_types != TYPE_INFO_ID_INVALID) {
                 panic("haven't implemented type checking of function arguments");
             }
-            if (t1.value.function.return_types != NULL || t2.value.function.return_types != NULL) {
+            if (t1.value.function.return_types != TYPE_INFO_ID_INVALID || t2.value.function.return_types != TYPE_INFO_ID_INVALID) {
                 panic("haven't implemented type checking of function return types");
             }
             return true;
-            // TODO
-        // Meta
-            // TODO
         default:
             panic("haven't implemented type conversion for these type_info kinds (%d %d)", t1.kind, t2.kind);
     }
 }
 
-type_info typecheck_expression(symbol_table *symbols, expression_node *expression);
-void typecheck_statement(symbol_table *symbols, statement_node *statement);
+type_info typecheck_expression(typecheck_state *state, expression_node *expression);
+void typecheck_statement(typecheck_state *state, statement_node *statement);
+void print_symbol_table(symbol_table *symbols);
 
 // TODO: ensure operator matches types. for example '123 * true' should cause a type error
-type_info typecheck_infix_expression(symbol_table *symbols, infix_node infix) {
-    type_info lhs_type = typecheck_expression(symbols, infix.left);
-    type_info rhs_type = typecheck_expression(symbols, infix.right);
+type_info typecheck_infix_expression(typecheck_state *state, infix_node infix) {
+    type_info lhs_type = typecheck_expression(state, infix.left);
+    type_info rhs_type = typecheck_expression(state, infix.right);
+
     if (!type_equals(lhs_type, rhs_type)) {
         panic("type error: infix expression lhs type (%d) doesn't match rhs type (%d)", lhs_type.kind, rhs_type.kind);
     }
     return lhs_type;
 }
 
-type_info typecheck_function_declaration(symbol_table *symbols, function_node function) {
-
+type_info typecheck_function_declaration(typecheck_state *state, function_node function) {
     type_info type = { .kind = TYPE_FUNCTION };
     // TODO typecheck arguments (functions can't have arguments yet)
+    type.value.function.argument_types = TYPE_INFO_ID_INVALID;
     // TODO typecheck return expressions (functions can't have return types yet)
-    type.value.function.argument_types = NULL;
-    type.value.function.return_types = NULL;
+    type.value.function.return_types = TYPE_INFO_ID_INVALID;
 
 
 
+    // save
     symbol_table child_scope_symbols = symbol_table_alloc();
-    child_scope_symbols.parent = symbols;
+    child_scope_symbols.parent = state->symbols;
+    state->symbols = &child_scope_symbols;
 
     statement_node *statement = function.body;
     while (statement != NULL) {
-        typecheck_statement(&child_scope_symbols, statement);
+        typecheck_statement(state, statement);
         statement = statement->next;
     }
 
+    // restore
+    state->symbols = child_scope_symbols.parent;
     symbol_table_free(child_scope_symbols);
 
 
@@ -152,7 +155,7 @@ type_info typecheck_function_declaration(symbol_table *symbols, function_node fu
     return type;
 }
 
-type_info typecheck_expression(symbol_table *symbols, expression_node *expression) {
+type_info typecheck_expression(typecheck_state *state, expression_node *expression) {
     type_info type;
     switch (expression->kind) {
         case INT:
@@ -160,7 +163,7 @@ type_info typecheck_expression(symbol_table *symbols, expression_node *expressio
         case BOOL:
             return (type_info){ .kind = TYPE_BOOL };
         case IDENTIFIER:
-            type = symbol_table_lookup(symbols, expression->value.identifier);
+            type = symbol_table_lookup(state->symbols, expression->value.identifier);
             if (type.kind != TYPE_INVALID) {
                 return type;
             } else {
@@ -171,38 +174,41 @@ type_info typecheck_expression(symbol_table *symbols, expression_node *expressio
             }
             break;
         case INFIX:
-            return typecheck_infix_expression(symbols, expression->value.infix);
+            return typecheck_infix_expression(state, expression->value.infix);
         case INLINE_FUNCTION:
-            return typecheck_function_declaration(symbols, expression->value.function_declaration);
+            return typecheck_function_declaration(state, expression->value.function_declaration);
         default:
             panic("unhandled expression kind in typecheck_expression (%d)", expression->kind);
     }
 }
 
-void typecheck_declaration(symbol_table *symbols, declaration_node declaration) {
-    type_info lhs_type = symbol_table_lookup(symbols, declaration.identifier);
+void typecheck_declaration(typecheck_state *state, declaration_node declaration) {
+    type_info lhs_type = symbol_table_lookup(state->symbols, declaration.identifier);
     if (lhs_type.kind != TYPE_INVALID) {
         // TODO consider child<->parent scope shadowing (same-scope shadowing likely banned)
         panic("shadowing is not supported (at least not currently)");
     }
 
-    type_info desired_type = symbol_table_lookup(symbols, declaration.data_type);
-    if (desired_type.kind == TYPE_INVALID) {
-        printf("type error: attempted to use unknown type '");
-        print_string(declaration.data_type);
-        printf("' in declaration\n");
-        panic("(make sure that type is defined prior to use)");
+    type_info info_of_desired_type = symbol_table_lookup(state->symbols, declaration.data_type);
+    if (info_of_desired_type.kind != TYPE_TYPE) {
+        panic("type error: expected type in declaration");
     }
-    type_info expression_type = typecheck_expression(symbols, declaration.expression);
+    type_info desired_type = type_info_array_get(state->global_type_infos, info_of_desired_type.value.id_of_underlying_type);
+    if (desired_type.kind == TYPE_TYPE) {
+        panic("first-class types not yet supported");
+    }
+
+    type_info expression_type = typecheck_expression(state, declaration.expression);
+
     if (!type_equals(desired_type, expression_type)) {
         panic("type error: desired type (%d) does not match expression type (%d)", desired_type.kind, expression_type.kind);
     }
 
-    symbol_table_insert(symbols, declaration.identifier, desired_type);
+    symbol_table_insert(state->symbols, declaration.identifier, desired_type);
 }
 
-void typecheck_assignment(symbol_table *symbols, assignment_node assignment) {
-    type_info lhs_type = symbol_table_lookup(symbols, assignment.lhs);
+void typecheck_assignment(typecheck_state *state, assignment_node assignment) {
+    type_info lhs_type = symbol_table_lookup(state->symbols, assignment.lhs);
     if (lhs_type.kind == TYPE_INVALID) {
         printf("\ntype error: lhs of identifier (\"");
         print_string(assignment.lhs);
@@ -210,19 +216,19 @@ void typecheck_assignment(symbol_table *symbols, assignment_node assignment) {
         panic("assignment typecheck failed");
     }
 
-    type_info rhs_type = typecheck_expression(symbols, assignment.expression);
+    type_info rhs_type = typecheck_expression(state, assignment.expression);
     if (!type_equals(lhs_type, rhs_type)) {
         panic("type error: Assignment's RHS type (%d) does not match LHS type (%d)", rhs_type.kind, lhs_type.kind);
     }
 }
 
-void typecheck_statement(symbol_table *symbols, statement_node *statement) {
+void typecheck_statement(typecheck_state *state, statement_node *statement) {
     switch (statement->kind) {
         case DECLARATION:
-            typecheck_declaration(symbols, statement->value.declaration);
+            typecheck_declaration(state, statement->value.declaration);
             break;
         case ASSIGNMENT:
-            typecheck_assignment(symbols, statement->value.assignment);
+            typecheck_assignment(state, statement->value.assignment);
             break;
         case RETURN:
             // TODO(sam) need a way to pass current function's type_info to typecheck_return
@@ -232,50 +238,45 @@ void typecheck_statement(symbol_table *symbols, statement_node *statement) {
     }
 }
 
-#define from_cstr string_from_cstring
-
-void print_symbol_table(symbol_table *symbols);
-
 void typecheck_entire_program(symbol_table *global_symbols, statement_node *first_statement) {
-    // Start counting types at 1, since 0 represents TYPE_INVALID
-    // data_type next_available_type_id = 1;
-    // // Predefined types
-    // for (uint32_t i = 0; i < NUM_BUILTIN_TYPES; i++) {
-    //     symbol_table_insert(global_types, builtin_types[i], i + 1);
-    //     next_available_type_id += 1;
-    // }
-    // // Predefined symbols
-    // // TODO(sam) what number is this?
-    // // symbol_table_insert(global_symbols, string_from_cstring("main"), 67);
-    // // next_available_type_id += 1;
 
-
-
-    // Predefined types
-    symbol_table_insert(global_symbols, from_cstr("int"), (type_info){ .kind = TYPE_INT });
-    //     ("int" is one possible name for the underlying concept of intness. Other aliases ("myint") may refer to the same underlying type)
-    symbol_table_insert(global_symbols, from_cstr("bool"), (type_info){ .kind = TYPE_BOOL });
-    // Predefined symbols (if any). for now this is a hack because functions
-    // can only be ASSIGNED, not DECLARED
-    symbol_table_insert(global_symbols, from_cstr("main"), (type_info){
+    // populate builtin types
+    type_info_array global_type_infos;
+    array_init(&global_type_infos, sizeof(type_info));
+    type_info_array_append(&global_type_infos, (type_info){ .kind = TYPE_INVALID }); // (TYPE_INFO_ID_INVALID)
+    const type_info_id int_id = type_info_array_append(&global_type_infos, (type_info){ .kind = TYPE_INT });
+    // printf("int_id=%d\n", int_id);
+    const type_info_id bool_id = type_info_array_append(&global_type_infos, (type_info){ .kind = TYPE_BOOL });
+    // populate builtin symbols
+    symbol_table_insert(global_symbols, string_from_cstring("int"), (type_info) {
+            .kind = TYPE_TYPE,
+            .value.id_of_underlying_type = int_id,
+    });
+    symbol_table_insert(global_symbols, string_from_cstring("bool"), (type_info) {
+            .kind = TYPE_TYPE,
+            .value.id_of_underlying_type = bool_id,
+    });
+    // HACK: 'main' is predefined because currently functions can only be ASSIGNED, not DECLARED
+    symbol_table_insert(global_symbols, string_from_cstring("main"), (type_info){
         .kind = TYPE_FUNCTION,
-        .value.function = { .argument_types = NULL, .return_types = NULL },
+        .value.function = { .argument_types = TYPE_INFO_ID_INVALID, .return_types = TYPE_INFO_ID_INVALID },
     });
 
-    // print_symbol_table(global_symbols);
-
-
+    typecheck_state state = {
+        .symbols = global_symbols,
+        .global_type_infos = &global_type_infos,
+    };
 
     statement_node *current_statement = first_statement;
     while (current_statement != NULL) {
-        typecheck_statement(global_symbols, current_statement);
+        typecheck_statement(&state, current_statement);
         current_statement = current_statement->next;
     }
 }
 
 void print_type_info(void *info) {
-    type_info t = *(type_info *)info;
-    switch (t.kind) {
+    type_info *t = (type_info *)info;
+    switch (t->kind) {
         case TYPE_INVALID:
             cprintf("(invalid type, this shouldn't be here)");
             break;
@@ -290,11 +291,18 @@ void print_type_info(void *info) {
             // print argument types here
             // print return types here
             break;
+        case TYPE_TYPE:
+            cprintf("type whose underlying type is (");
+            // print_type_info(t->value.id_of_underlying_type);
+            cprintf("(todo print this)");
+            cprintf(")");
+            break;
         default:
-            panic("unhandled type_info kind (%d)", t.kind);
+            panic("unhandled type_info kind (%d)", t->kind);
     }
 }
 
+// does not print parent table
 void print_symbol_table(symbol_table *symbols) {
     hash_table_print(symbols->table, "Symbol table", print_type_info);
 }
