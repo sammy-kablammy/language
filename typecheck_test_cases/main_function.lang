@@ -1,0 +1,4 @@
+// you can assign a main function
+main = func() {
+    return 100
+}
