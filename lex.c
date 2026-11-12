@@ -14,6 +14,8 @@ typedef struct token {
         TOKEN_DOT = '.',
         TOKEN_LESS_THAN = '<',
         TOKEN_GREATER_THAN = '>',
+        TOKEN_LPAREN = '(',
+        TOKEN_RPAREN = ')',
         TOKEN_LBRACE = '{',
         TOKEN_RBRACE = '}',
         TOKEN_END_OF_LINE = '\n',
@@ -28,8 +30,9 @@ typedef struct token {
         TOKEN_EQUAL_TO,
         TOKEN_NOT_EQUAL_TO,
         TOKEN_WHILE,
-		TOKEN_IF,
-		TOKEN_ELSE,
+		    TOKEN_IF,
+		    TOKEN_ELSE,
+        TOKEN_FUNCTION,
     } kind;
     union {
         string identifier; // Only used for identifiers
@@ -96,12 +99,15 @@ void lex_identifier_or_keyword(string input, uint64_t *i, token *tok) {
         tok->kind = TOKEN_WHILE;
         return;
     }
-	if (string_equals_cstring(identifier, "if")) {
+	  if (string_equals_cstring(identifier, "if")) {
         tok->kind = TOKEN_IF;
         return;
     }
-	if (string_equals_cstring(identifier, "else")) {
+	  if (string_equals_cstring(identifier, "else")) {
         tok->kind = TOKEN_ELSE;
+    }
+    if (string_equals_cstring(identifier, "func")) {
+        tok->kind = TOKEN_FUNCTION;
         return;
     }
     // Other keywords go here
@@ -208,6 +214,8 @@ token_array lex_entire_file(string input) {
             case TOKEN_MINUS: // fall through
             case TOKEN_COLON: // fall through
             case TOKEN_DOT: // fall through
+            case TOKEN_LPAREN: // fall through
+            case TOKEN_RPAREN: // fall through
             case TOKEN_LBRACE: // fall through
             case TOKEN_RBRACE: // fall through
             case TOKEN_END_OF_LINE:

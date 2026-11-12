@@ -74,20 +74,23 @@ typedef struct declaration_node {
 } declaration_node;
 
 typedef struct assignment_node {
-	string lhs;
-	expression_node *expression;
+	  string lhs;
+	  expression_node *expression;
 } assignment_node;
 
 typedef struct while_loop_node {
-	expression_node *condition;
+	  expression_node *condition;
     statement_node *body;
 } while_loop_node;
 
 typedef struct conditional_node {
-	expression_node *condition;
-	statement_node *body;
+	  expression_node *condition;
+	  statement_node *body;
     statement_node *alt_body; // not guaranteed to be non-null
 } conditional_node;
+typedef struct function_node {
+    statement_node *body;
+} function_node;
 
 struct statement_node {
     enum {
@@ -102,7 +105,8 @@ struct statement_node {
         declaration_node declaration;
         assignment_node assignment;
         while_loop_node while_loop;
-		conditional_node conditional;
+		    conditional_node conditional;
+        function_node function;
         // This one's a pointer because a return statement may or may not have
         // an expression with it. NULL pointer represents plain return.
         expression_node *maybe_return_expression;
@@ -117,6 +121,7 @@ struct expression_node {
         INT,
         IDENTIFIER,
         BOOL,
+        INLINE_FUNCTION,
     } kind;
 
     union {
@@ -124,6 +129,7 @@ struct expression_node {
         string identifier;
         infix_node infix;
         bool bool;
+        function_node function_declaration;
     } value;
 };
 
@@ -268,12 +274,12 @@ statement_node *parse_statement(parser_state *state) {
             parser_advance(state);
             stmt->value.while_loop.condition = parse_expression(state, MIN_PREC);
             if (state->current_token.kind != TOKEN_LBRACE) {
-                parser_error(state, "Expected '{' after while-loop condition", state->current_token);
+                parser_error(state, "Expected '{' after while-loop condition");
             }
             parser_advance(state);
             stmt->value.while_loop.body = parse_block(state);
             if (state->current_token.kind != TOKEN_RBRACE) {
-                parser_error(state, "Expected '}' after while-loop body", state->current_token);
+                parser_error(state, "Expected '}' after while-loop body");
             }
             parser_advance(state);
             break;
@@ -368,6 +374,31 @@ expression_node *parse_leaf(parser_state* state) {
 		leaf->kind = BOOL;
 		leaf->value.bool = false;
 	}
+    else if (state->current_token.kind == TOKEN_FUNCTION) {
+        leaf->kind = INLINE_FUNCTION;
+        parser_advance(state);
+        // expect left parenthesis
+        if (state->current_token.kind != TOKEN_LPAREN) {
+            parser_error(state, "Expected '(' after 'func' keyword");
+        }
+        parser_advance(state);
+        // expect arguments here
+        // expect right parenthesis
+        if (state->current_token.kind != TOKEN_RPAREN) {
+            parser_error(state, "Expected ')' after function arguments");
+        }
+        parser_advance(state);
+        // expect left brace
+        if (state->current_token.kind != TOKEN_LBRACE) {
+            parser_error(state, "Expected '{' after function declaration");
+        }
+        parser_advance(state);
+        // expect block of code
+        leaf->value.function_declaration.body = parse_block(state);
+        if (state->current_token.kind != TOKEN_RBRACE) {
+            parser_error(state, "Expected '}' after function body");
+        }
+    }
 	else {
         parser_error(state, "Expected expression, got %T", state->current_token);
 	}
@@ -386,6 +417,8 @@ int sprint_token(char *buf, token t) {
         case TOKEN_DOT: // fall through
 		case TOKEN_LESS_THAN: // fall through
 		case TOKEN_GREATER_THAN: // fall through
+        case TOKEN_LPAREN: // fall through
+        case TOKEN_RPAREN: // fall through
 		case TOKEN_LBRACE: // fall through
 		case TOKEN_RBRACE:
 			return sprintf(buf, "%c", t.kind);
@@ -408,6 +441,8 @@ int sprint_token(char *buf, token t) {
             return sprintf(buf, "==");
 		case TOKEN_NOT_EQUAL_TO:
             return sprintf(buf, "!=");
+        case TOKEN_FUNCTION:
+            return sprintf(buf, "func");
 		default:
 			panic("print_token: unknown token kind=%d", t.kind);
 	}

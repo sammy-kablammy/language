@@ -1,6 +1,7 @@
 const uint32_t INDENT_AMOUNT = 4;
 
 void pretty_print_statement(uint32_t num_spaces, statement_node *statement);
+void pretty_print_block(uint32_t num_spaces, statement_node *statement);
 
 void print_spaces(uint32_t num_spaces) {
     for (uint32_t i = 0; i < num_spaces; i++) {
@@ -29,6 +30,16 @@ void pretty_print_expression(uint32_t num_spaces, expression_node *expression) {
             } else {
                 panic("Somehow a bool expression got a nonboolean value");
             }
+            break;
+        case INLINE_FUNCTION:
+            printf("func(");
+            // print arguments here
+            printf(") ");
+            // print return type here
+            printf("{\n");
+            // print function body here
+            pretty_print_block(num_spaces + INDENT_AMOUNT, expression->value.function_declaration.body);
+            printf("}");
             break;
         default:
             panic("unhandled expression kind (%d) to print", expression->kind);
