@@ -39,19 +39,19 @@ language features to parse:
 - [ ] unary operators
   - [ ] logical `!`
   - [ ] negation `-`
-- [ ] comments
-- [ ] break / continue keywords
+- [X] comments
+- [X] break / continue keywords
 - [ ] import keyword like `import "filename"`
 - [ ] correctly parse operator precedence
   - [x] infix operators
   - [ ] handle parenthesized expressions like `a * (b + c)`
 - [ ] function call expressions
   - [ ] array subscript expressions (use `[` instead of `(` for this)
-- [ ] if statements
+- [X] if statements
 - [ ] loops
   - [X] while loops
   - [ ] consider for-loop
-- [ ] function declaration expressions
+- [X] function declaration expressions
 - [ ] array declarations
 - [ ] struct declarations
 - [ ] allow expressions as the left side of assignments. for example:
