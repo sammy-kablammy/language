@@ -99,6 +99,8 @@ struct statement_node {
         WHILE_LOOP,
 		CONDITIONAL,
         RETURN,
+        BREAK,
+        CONTINUE,
     } kind;
 
     union {
@@ -106,7 +108,6 @@ struct statement_node {
         assignment_node assignment;
         while_loop_node while_loop;
         conditional_node conditional;
-        function_node function;
         // This one's a pointer because a return statement may or may not have
         // an expression with it. NULL pointer represents plain return.
         expression_node *maybe_return_expression;
@@ -265,6 +266,14 @@ statement_node *parse_statement(parser_state *state) {
             } else {
                 stmt->value.maybe_return_expression = parse_expression(state, MIN_PREC);
             }
+            break;
+        case TOKEN_BREAK:
+            stmt->kind = BREAK;
+            parser_advance(state);
+            break;
+        case TOKEN_CONTINUE:
+            stmt->kind = CONTINUE;
+            parser_advance(state);
             break;
         case TOKEN_IDENTIFIER:
             *stmt = parse_declaration_or_assignment(state);

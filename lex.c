@@ -33,6 +33,8 @@ typedef struct token {
         TOKEN_IF,
         TOKEN_ELSE,
         TOKEN_FUNCTION,
+        TOKEN_BREAK,
+        TOKEN_CONTINUE,
     } kind;
     union {
         string identifier; // Only used for identifiers
@@ -109,6 +111,14 @@ void lex_identifier_or_keyword(string input, uint64_t *i, token *tok) {
     }
     if (string_equals_cstring(identifier, "func")) {
         tok->kind = TOKEN_FUNCTION;
+        return;
+    }
+    if (string_equals_cstring(identifier, "break")) {
+        tok->kind = TOKEN_BREAK;
+        return;
+    }
+    if (string_equals_cstring(identifier, "continue")) {
+        tok->kind = TOKEN_CONTINUE;
         return;
     }
     // Other keywords go here
