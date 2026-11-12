@@ -99,12 +99,13 @@ void lex_identifier_or_keyword(string input, uint64_t *i, token *tok) {
         tok->kind = TOKEN_WHILE;
         return;
     }
-	  if (string_equals_cstring(identifier, "if")) {
+	if (string_equals_cstring(identifier, "if")) {
         tok->kind = TOKEN_IF;
         return;
     }
-	  if (string_equals_cstring(identifier, "else")) {
+	if (string_equals_cstring(identifier, "else")) {
         tok->kind = TOKEN_ELSE;
+        return;
     }
     if (string_equals_cstring(identifier, "func")) {
         tok->kind = TOKEN_FUNCTION;
