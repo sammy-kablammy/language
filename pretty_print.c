@@ -75,6 +75,12 @@ void pretty_print_statement(uint32_t num_spaces, statement_node *statement) {
                 pretty_print_expression(num_spaces, statement->value.maybe_return_expression);
             }
             break;
+        case BREAK:
+            printf("break");
+            break;
+        case CONTINUE:
+            printf("continue");
+            break;
         case WHILE_LOOP:
             printf("while ");
             pretty_print_expression(num_spaces, statement->value.while_loop.condition);
