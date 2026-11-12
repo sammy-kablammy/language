@@ -30,8 +30,8 @@ typedef struct token {
         TOKEN_EQUAL_TO,
         TOKEN_NOT_EQUAL_TO,
         TOKEN_WHILE,
-		    TOKEN_IF,
-		    TOKEN_ELSE,
+        TOKEN_IF,
+        TOKEN_ELSE,
         TOKEN_FUNCTION,
     } kind;
     union {

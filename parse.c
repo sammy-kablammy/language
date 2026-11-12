@@ -74,18 +74,18 @@ typedef struct declaration_node {
 } declaration_node;
 
 typedef struct assignment_node {
-	  string lhs;
-	  expression_node *expression;
+    string lhs;
+    expression_node *expression;
 } assignment_node;
 
 typedef struct while_loop_node {
-	  expression_node *condition;
+    expression_node *condition;
     statement_node *body;
 } while_loop_node;
 
 typedef struct conditional_node {
-	  expression_node *condition;
-	  statement_node *body;
+    expression_node *condition;
+    statement_node *body;
     statement_node *alt_body; // not guaranteed to be non-null
 } conditional_node;
 typedef struct function_node {
@@ -105,7 +105,7 @@ struct statement_node {
         declaration_node declaration;
         assignment_node assignment;
         while_loop_node while_loop;
-		    conditional_node conditional;
+        conditional_node conditional;
         function_node function;
         // This one's a pointer because a return statement may or may not have
         // an expression with it. NULL pointer represents plain return.
@@ -443,6 +443,10 @@ int sprint_token(char *buf, token t) {
             return sprintf(buf, "!=");
         case TOKEN_FUNCTION:
             return sprintf(buf, "func");
+        case TOKEN_IF:
+            return sprintf(buf, "if");
+        case TOKEN_ELSE:
+            return sprintf(buf, "else");
 		default:
 			panic("print_token: unknown token kind=%d", t.kind);
 	}
