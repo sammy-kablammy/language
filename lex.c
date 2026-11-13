@@ -44,7 +44,9 @@ void token_array_append(token_array *arr, token tok) {
     array_append(arr, &tok);
 }
 token token_array_get(token_array *arr, int i) {
-    return *(token *)array_get(arr, i);
+    token out = { 0 };
+    array_get(arr, i, &out);
+    return out;
 }
 
 bool is_keyword_character(char ch) {

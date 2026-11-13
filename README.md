@@ -68,6 +68,7 @@ typechecking phase:
 - [ ] type inference `who_knows := some_expression_here`
 - [ ] first class types, builtin type called `type`
 - [ ] casting, for inspiration see https://www.gingerbill.org/article/2026/02/23/designing-odins-casting-syntax/
+- [ ] error messages
 
 future
 - bytecode generation
@@ -84,3 +85,4 @@ future
   - remove calls to print_string and sprint_string, can both be replaced with
     the compiler_printf family. generally go through and remove all printfs,
     fprintfs, sprintfs in the main body of the compiler with cprintfs
+- go through and find TODOs; they're not all described here
