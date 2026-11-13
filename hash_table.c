@@ -103,7 +103,7 @@ void hash_table_free(hash_table table) {
 // callback receives:
 // 1. one hash table entry
 // 2. userdata (whatever other context you might need)
-void hash_table_foreach(hash_table table, void (*callback)(string key, void *value, void *userdata), void *userdata) {
+void hash_table_foreach(hash_table table, void (*callback)(string, void *, void *), void *userdata) {
     for (int i = 0; i < table.num_entries_allocated; i++) {
         hash_entry entry = table.entries[i];
         if (entry.is_used) {
