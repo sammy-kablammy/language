@@ -100,15 +100,14 @@ void hash_table_free(hash_table table) {
     xfree(table.entries);
 }
 
-void hash_table_print(hash_table table, const char *name, void (*print_element)(void *element)) {
-    printf("================= %s =================\n", name);
+// callback receives:
+// 1. one hash table entry
+// 2. userdata (whatever other context you might need)
+void hash_table_foreach(hash_table table, void (*callback)(string key, void *value, void *userdata), void *userdata) {
     for (int i = 0; i < table.num_entries_allocated; i++) {
         hash_entry entry = table.entries[i];
         if (entry.is_used) {
-            cprintf("| key=\"%S\" | ", entry.key);
-            print_element(entry.value);
-            cprintf("\n");
+            callback(entry.key, entry.value, userdata);
         }
     }
-    printf("=============== END %s ===============\n", name);
 }

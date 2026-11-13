@@ -82,4 +82,5 @@ future
   - systematic compilation failures. should be able to write negative tests like
     "this program should fail to type check"
   - remove calls to print_string and sprint_string, can both be replaced with
-    the compiler_printf family
+    the compiler_printf family. generally go through and remove all printfs,
+    fprintfs, sprintfs in the main body of the compiler with cprintfs

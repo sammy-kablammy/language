@@ -95,7 +95,7 @@ bool type_equals(type_info t1, type_info t2) {
 
 type_info typecheck_expression(typecheck_state *state, expression_node *expression);
 void typecheck_statement(typecheck_state *state, statement_node *statement);
-void print_symbol_table(symbol_table *symbols, const char *name);
+void print_symbol_table(typecheck_state *state, const char *name);
 
 // TODO: ensure operator matches types. for example '123 * true' should cause a type error
 type_info typecheck_infix_expression(typecheck_state *state, infix_node infix) {
@@ -128,7 +128,7 @@ type_info typecheck_function_declaration(typecheck_state *state, function_node f
         statement = statement->next;
     }
     if (state->print_symbols_when_exiting_scope) {
-        print_symbol_table(&child_scope_symbols, "symbols for function declaration");
+        print_symbol_table(state, "symbols for function declaration");
     }
 
     // restore
@@ -263,15 +263,15 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
     typecheck_statement(&state, statement);
 
     if (debug_print_symbols) {
-        print_symbol_table(&symbols, "symbols for top-level scope");
+        print_symbol_table(&state, "symbols for top-level scope");
     }
 
     symbol_table_free(symbols);
 }
 
-void print_type_info(void *info) {
-    type_info *t = (type_info *)info;
-    switch (t->kind) {
+void print_type_info(typecheck_state *state, type_info info) {
+    (void)state;
+    switch (info.kind) {
         case TYPE_INVALID:
             cprintf("(invalid type, this shouldn't be here)");
             break;
@@ -287,12 +287,24 @@ void print_type_info(void *info) {
             // print return types here
             break;
         case TYPE_TYPE:
-            cprintf("type whose underlying ID is (%p)", t->value.underlying_type);
+            cprintf("type whose underlying ID is (%p)", info.value.underlying_type);
             break;
     }
 }
 
-// does not print parent table
-void print_symbol_table(symbol_table *symbols, const char *name) {
-    hash_table_print(symbols->table, name, print_type_info);
+// TODO does not print parent table
+void _print_symbol_table_callback(string key, void *value, void *userdata) {
+    type_info info = *(type_info *)value;
+    typecheck_state *state = userdata;
+
+    cprintf("| \"%S\" | ", key);
+    print_type_info(state, info);
+    cprintf("\n");
+
+}
+
+void print_symbol_table(typecheck_state *state, const char *name) {
+    printf("================= %s =================\n", name);
+    hash_table_foreach(state->symbols->table, _print_symbol_table_callback, state);
+    printf("=============== END %s ===============\n", name);
 }
