@@ -86,7 +86,8 @@ void symbol_table_insert(symbol_table *symbols, string identifier, type_info_id 
     hash_table_insert(&symbols->table, identifier, &id);
 }
 
-bool type_equals(type_info t1, type_info t2) {
+bool are_types_compatible(typecheck_state *state, type_info t1, type_info t2) {
+    (void)state;
     if (t1.kind != t2.kind) {
         return false;
     }
@@ -119,7 +120,7 @@ type_info typecheck_infix_expression(typecheck_state *state, infix_node infix) {
     type_info lhs_type = typecheck_expression(state, infix.left);
     type_info rhs_type = typecheck_expression(state, infix.right);
 
-    if (!type_equals(lhs_type, rhs_type)) {
+    if (!are_types_compatible(state, lhs_type, rhs_type)) {
         panic("type error: infix expression lhs type (%d) doesn't match rhs type (%d)", lhs_type.kind, rhs_type.kind);
     }
     return lhs_type;
@@ -203,7 +204,7 @@ void typecheck_declaration(typecheck_state *state, declaration_node declaration)
     if (desired_type.kind == TYPE_TYPE) {
         // panic("first-class types not yet supported");
     } else {
-        if (!type_equals(desired_type, expression_type)) {
+        if (!are_types_compatible(state, desired_type, expression_type)) {
             panic("type error: desired type (%d) does not match expression type (%d)", desired_type.kind, expression_type.kind);
         }
     }
@@ -220,7 +221,7 @@ void typecheck_assignment(typecheck_state *state, assignment_node assignment) {
     type_info lhs_type = type_info_from_id(state, id_of_lhs_type);
 
     type_info rhs_type = typecheck_expression(state, assignment.expression);
-    if (!type_equals(lhs_type, rhs_type)) {
+    if (!are_types_compatible(state, lhs_type, rhs_type)) {
         panic("type error: Assignment's RHS type (%d) does not match LHS type (%d)", rhs_type.kind, lhs_type.kind);
     }
 }
@@ -235,6 +236,7 @@ void typecheck_statement(typecheck_state *state, statement_node *statement) {
             break;
         case RETURN:
             // TODO(sam) need a way to pass current function's type_info to typecheck_return
+            // panic("returns are not yet typechecked");
             break;
         default:
             panic("typecheck_statement: unhandled statement kind (%d)", statement->kind);
@@ -252,13 +254,6 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
     };
 
     // populate builtin types
-    // type_type is the root of the cycle. its underlying type is type
-    // type_info type_type_info;
-    // type_type_info.kind = TYPE_TYPE;
-    // type_type_info.value.underlying_type = &type_type_info;
-    // type_info int_type_info = { .kind = TYPE_INT };
-    // type_info bool_type_info = { .kind = TYPE_BOOL };
-
     type_info_alloc(&state, (type_info) { .kind = TYPE_INVALID }); // invalid needs to be 0 so this goes here, unused
     const type_info_id type_type_id = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE }); // cycle
     // the rest of the primitive types go after invalid and the metatype
@@ -272,10 +267,6 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
     (void)type_type_id;
     symbol_table_insert(state.symbols, string_from_cstring("int"), int_type);
     symbol_table_insert(state.symbols, string_from_cstring("bool"), bool_type);
-    // symbol_table_insert(state.symbols, string_from_cstring("type"), (type_info) {
-    //         .kind = TYPE_TYPE,
-    //         value.underlying_type = &type_type_info,
-    // });
     // HACK: 'main' is predefined because currently functions can only be ASSIGNED, not DECLARED.
     //        This can go away once 'main :: func() { // ...' is parseable.
     const type_info_id secret_main_type = type_info_alloc(&state, (type_info) {
@@ -295,7 +286,7 @@ void print_type_info(typecheck_state *state, type_info_id id) {
     type_info info = type_info_from_id(state, id);
     switch (info.kind) {
         case TYPE_INVALID:
-            cprintf("(invalid type, this shouldn't be here)");
+            panic("invalid type, this shouldn't be here");
             break;
         case TYPE_INT:
             cprintf("int");
@@ -324,7 +315,6 @@ void _print_symbol_table_callback(string key, void *value, void *userdata) {
 
 void print_symbol_table(typecheck_state *state, const char *name) {
     symbol_table *symbols = state->symbols;
-
     printf("================= %s =================\n", name);
     hash_table_foreach(symbols->table, _print_symbol_table_callback, state);
     symbols = symbols->parent;
