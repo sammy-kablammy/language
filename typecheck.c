@@ -1,14 +1,12 @@
 struct type_info;
-typedef uint32_t type_info_id;
-const type_info_id TYPE_INFO_ID_INVALID = 0;
 
 typedef struct {
     // there could be 0, 1, or many argument or return types
-    type_info_id argument_types;
-    type_info_id return_types;
+    struct type_info *argument_types;
+    struct type_info *return_types;
 } function_type_info;
 
-typedef struct {
+typedef struct type_info {
     enum {
         TYPE_INVALID = 0,
 
@@ -27,27 +25,10 @@ typedef struct {
         // void *primitive; // Primitive types don't have any other info
         function_type_info function;
         // struct_type_info structure;
-        type_info_id id_of_underlying_type; // Only used for TYPE_TYPE (this is so meta)
+        struct type_info *underlying_type; // Only used for TYPE_TYPE (this is so meta)
     } value;
-    // type_info_id next; // to be used for function arguments
+    struct type_info *next; // to be used for function arguments
 } type_info;
-
-typedef array type_info_array;
-// Return the ID of whatever was just appended
-type_info_id type_info_array_append(type_info_array *arr, type_info info) {
-    array_append(arr, &info);
-    return arr->length - 1;
-}
-type_info type_info_array_get(type_info_array *arr, type_info_id id) {
-    void *element = array_get(arr, id);
-    return *(type_info *)element;
-}
-type_info_array type_info_array_alloc() {
-    return array_alloc(sizeof(type_info));
-}
-void type_info_array_free_contents(type_info_array *arr) {
-    array_free_contents(arr);
-}
 
 // Symbol table maps identifiers to types for a given scope
 typedef struct symbol_table {
@@ -85,7 +66,6 @@ void symbol_table_insert(symbol_table *symbols, string identifier, type_info inf
 
 typedef struct {
     symbol_table *symbols;
-    type_info_array *type_info_registry;
     bool print_symbols_when_exiting_scope; // (only used for testing)
 } typecheck_state;
 
@@ -101,10 +81,10 @@ bool type_equals(type_info t1, type_info t2) {
             return t1.kind == t2.kind;
         // Compound types
         case TYPE_FUNCTION:
-            if (t1.value.function.argument_types != TYPE_INFO_ID_INVALID || t2.value.function.argument_types != TYPE_INFO_ID_INVALID) {
+            if (t1.value.function.argument_types != NULL || t2.value.function.argument_types != NULL) {
                 panic("haven't implemented type checking of function arguments");
             }
-            if (t1.value.function.return_types != TYPE_INFO_ID_INVALID || t2.value.function.return_types != TYPE_INFO_ID_INVALID) {
+            if (t1.value.function.return_types != NULL || t2.value.function.return_types != NULL) {
                 panic("haven't implemented type checking of function return types");
             }
             return true;
@@ -131,9 +111,9 @@ type_info typecheck_infix_expression(typecheck_state *state, infix_node infix) {
 type_info typecheck_function_declaration(typecheck_state *state, function_node function) {
     type_info type = { .kind = TYPE_FUNCTION };
     // TODO typecheck arguments (functions can't have arguments yet)
-    type.value.function.argument_types = TYPE_INFO_ID_INVALID;
+    type.value.function.argument_types = NULL;
     // TODO typecheck return expressions (functions can't have return types yet)
-    type.value.function.return_types = TYPE_INFO_ID_INVALID;
+    type.value.function.return_types = NULL;
 
 
 
@@ -246,42 +226,37 @@ void typecheck_statement(typecheck_state *state, statement_node *statement) {
 void typecheck_top_level_statement(statement_node *statement, bool debug_print_symbols) {
 
     // populate builtin types
-    type_info_array type_info_registry = type_info_array_alloc(sizeof(type_info));
-    type_info_array_append(&type_info_registry, (type_info){ .kind = TYPE_INVALID }); // (TYPE_INFO_ID_INVALID)
-    // const type_info_id type_id = type_info_array_append(&type_info_registry, (type_info){
-    //     .kind = TYPE_TYPE,
-    //     // TYPE_TYPE id must be defined first so it has a known id. this forms a
-    //     // cycle (the underlying type of "type" is itself)
-    //     .value.id_of_underlying_type = 1,
-    // });
-    const type_info_id int_id = type_info_array_append(&type_info_registry, (type_info){ .kind = TYPE_INT });
-    const type_info_id bool_id = type_info_array_append(&type_info_registry, (type_info){ .kind = TYPE_BOOL });
+    // type_type is the root of the cycle. its underlying type is type
+    // type_info type_type_info;
+    // type_type_info.kind = TYPE_TYPE;
+    // type_type_info.value.underlying_type = &type_type_info;
+    type_info int_type_info = { .kind = TYPE_INT };
+    type_info bool_type_info = { .kind = TYPE_BOOL };
 
     // populate builtin symbols
     symbol_table symbols = symbol_table_alloc();
     symbol_table_insert(&symbols, string_from_cstring("int"), (type_info) {
             .kind = TYPE_TYPE,
-            .value.id_of_underlying_type = int_id,
+            .value.underlying_type = &int_type_info,
     });
     symbol_table_insert(&symbols, string_from_cstring("bool"), (type_info) {
             .kind = TYPE_TYPE,
-            .value.id_of_underlying_type = bool_id,
+            .value.underlying_type = &bool_type_info,
     });
     // symbol_table_insert(&symbols, string_from_cstring("type"), (type_info) {
     //         .kind = TYPE_TYPE,
-    //         value.id_of_underlying_type = type_id,
+    //         value.underlying_type = &type_type_info,
     // });
     // HACK: 'main' is predefined because currently functions can only be ASSIGNED, not DECLARED.
     //        This can go away once 'main :: func() { // ...' is parseable.
     symbol_table_insert(&symbols, string_from_cstring("main"), (type_info){
         .kind = TYPE_FUNCTION,
-        .value.function = { .argument_types = TYPE_INFO_ID_INVALID, .return_types = TYPE_INFO_ID_INVALID },
+        .value.function = { .argument_types = NULL, .return_types = NULL },
     });
     // This is where type_infos for other top-level declarations would be inserted
 
     typecheck_state state = {
         .symbols = &symbols,
-        .type_info_registry = &type_info_registry,
         .print_symbols_when_exiting_scope = debug_print_symbols,
     };
 
@@ -292,7 +267,6 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
     }
 
     symbol_table_free(symbols);
-    type_info_array_free_contents(&type_info_registry);
 }
 
 void print_type_info(void *info) {
@@ -313,7 +287,7 @@ void print_type_info(void *info) {
             // print return types here
             break;
         case TYPE_TYPE:
-            cprintf("type whose underlying ID is (%d)", t->value.id_of_underlying_type);
+            cprintf("type whose underlying ID is (%p)", t->value.underlying_type);
             break;
     }
 }
