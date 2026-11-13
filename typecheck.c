@@ -42,6 +42,12 @@ type_info type_info_array_get(type_info_array *arr, type_info_id id) {
     void *element = array_get(arr, id);
     return *(type_info *)element;
 }
+type_info_array type_info_array_alloc() {
+    return array_alloc(sizeof(type_info));
+}
+void type_info_array_free_contents(type_info_array *arr) {
+    array_free_contents(arr);
+}
 
 // Symbol table maps identifiers to types for a given scope
 typedef struct symbol_table {
@@ -79,7 +85,8 @@ void symbol_table_insert(symbol_table *symbols, string identifier, type_info inf
 
 typedef struct {
     symbol_table *symbols;
-    type_info_array *global_type_infos;
+    type_info_array *type_info_registry;
+    bool print_symbols_when_exiting_scope; // (only used for testing)
 } typecheck_state;
 
 // TODO(sam) should this be a deep equals? depends whether we want duck typing i 'pose
@@ -108,7 +115,7 @@ bool type_equals(type_info t1, type_info t2) {
 
 type_info typecheck_expression(typecheck_state *state, expression_node *expression);
 void typecheck_statement(typecheck_state *state, statement_node *statement);
-void print_symbol_table(symbol_table *symbols);
+void print_symbol_table(symbol_table *symbols, const char *name);
 
 // TODO: ensure operator matches types. for example '123 * true' should cause a type error
 type_info typecheck_infix_expression(typecheck_state *state, infix_node infix) {
@@ -139,6 +146,9 @@ type_info typecheck_function_declaration(typecheck_state *state, function_node f
     while (statement != NULL) {
         typecheck_statement(state, statement);
         statement = statement->next;
+    }
+    if (state->print_symbols_when_exiting_scope) {
+        print_symbol_table(&child_scope_symbols, "symbols for function declaration");
     }
 
     // restore
@@ -233,10 +243,10 @@ void typecheck_statement(typecheck_state *state, statement_node *statement) {
     }
 }
 
-void typecheck_top_level_statement(statement_node *statement, bool print_symbols_when_done) {
+void typecheck_top_level_statement(statement_node *statement, bool debug_print_symbols) {
 
     // populate builtin types
-    type_info_array type_info_registry = array_alloc(sizeof(type_info));
+    type_info_array type_info_registry = type_info_array_alloc(sizeof(type_info));
     type_info_array_append(&type_info_registry, (type_info){ .kind = TYPE_INVALID }); // (TYPE_INFO_ID_INVALID)
     // const type_info_id type_id = type_info_array_append(&type_info_registry, (type_info){
     //     .kind = TYPE_TYPE,
@@ -272,15 +282,17 @@ void typecheck_top_level_statement(statement_node *statement, bool print_symbols
     typecheck_state state = {
         .symbols = &symbols,
         .type_info_registry = &type_info_registry,
+        .print_symbols_when_exiting_scope = debug_print_symbols,
     };
 
     typecheck_statement(&state, statement);
 
-    if (print_symbols_when_done) {
-        print_symbol_table(&symbols);
+    if (debug_print_symbols) {
+        print_symbol_table(&symbols, "symbols for top-level scope");
     }
 
     symbol_table_free(symbols);
+    type_info_array_free_contents(&type_info_registry);
 }
 
 void print_type_info(void *info) {
@@ -307,6 +319,6 @@ void print_type_info(void *info) {
 }
 
 // does not print parent table
-void print_symbol_table(symbol_table *symbols) {
-    hash_table_print(symbols->table, "Symbol table", print_type_info);
+void print_symbol_table(symbol_table *symbols, const char *name) {
+    hash_table_print(symbols->table, name, print_type_info);
 }

@@ -81,3 +81,5 @@ future
     with custom conversion codes for strings, enums, and so on
   - systematic compilation failures. should be able to write negative tests like
     "this program should fail to type check"
+  - remove calls to print_string and sprint_string, can both be replaced with
+    the compiler_printf family
