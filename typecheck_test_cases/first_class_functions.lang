@@ -1,0 +1,8 @@
+// main = func() {
+//     myint: type = int
+//     x: myint = 100
+// }
+
+myint: type = int
+
+x: int = 5

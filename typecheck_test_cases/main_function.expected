@@ -1,0 +1,6 @@
+================= symbols for function declaration =================
+=== PARENT
+| "int" <type whose underlying ID is (2)>
+| "bool" <type whose underlying ID is (4)>
+| "main" <function (argument/return types not yet printed here)>
+=============== END symbols for function declaration ===============

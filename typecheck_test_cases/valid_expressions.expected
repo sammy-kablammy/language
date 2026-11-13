@@ -1,5 +1,8 @@
-================= Symbol table =================
-| key="int" | type whose underlying ID is (1)
-| key="bool" | type whose underlying ID is (2)
-| key="main" | function
-=============== END Symbol table ===============
+================= symbols for function declaration =================
+| "two" <int>
+| "result" <int>
+=== PARENT
+| "int" <type whose underlying ID is (2)>
+| "bool" <type whose underlying ID is (4)>
+| "main" <function (argument/return types not yet printed here)>
+=============== END symbols for function declaration ===============
