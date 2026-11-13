@@ -8,7 +8,7 @@ typedef struct {
     type_info_id return_types;
 } function_type_info;
 
-typedef struct type_info {
+typedef struct {
     enum {
         TYPE_INVALID = 0,
 
@@ -233,39 +233,54 @@ void typecheck_statement(typecheck_state *state, statement_node *statement) {
     }
 }
 
-void typecheck_entire_program(symbol_table *global_symbols, statement_node *first_statement) {
+void typecheck_top_level_statement(statement_node *statement, bool print_symbols_when_done) {
 
     // populate builtin types
-    type_info_array global_type_infos = array_alloc(sizeof(type_info));
-    type_info_array_append(&global_type_infos, (type_info){ .kind = TYPE_INVALID }); // (TYPE_INFO_ID_INVALID)
-    const type_info_id int_id = type_info_array_append(&global_type_infos, (type_info){ .kind = TYPE_INT });
-    // printf("int_id=%d\n", int_id);
-    const type_info_id bool_id = type_info_array_append(&global_type_infos, (type_info){ .kind = TYPE_BOOL });
+    type_info_array type_info_registry = array_alloc(sizeof(type_info));
+    type_info_array_append(&type_info_registry, (type_info){ .kind = TYPE_INVALID }); // (TYPE_INFO_ID_INVALID)
+    // const type_info_id type_id = type_info_array_append(&type_info_registry, (type_info){
+    //     .kind = TYPE_TYPE,
+    //     // TYPE_TYPE id must be defined first so it has a known id. this forms a
+    //     // cycle (the underlying type of "type" is itself)
+    //     .value.id_of_underlying_type = 1,
+    // });
+    const type_info_id int_id = type_info_array_append(&type_info_registry, (type_info){ .kind = TYPE_INT });
+    const type_info_id bool_id = type_info_array_append(&type_info_registry, (type_info){ .kind = TYPE_BOOL });
+
     // populate builtin symbols
-    symbol_table_insert(global_symbols, string_from_cstring("int"), (type_info) {
+    symbol_table symbols = symbol_table_alloc();
+    symbol_table_insert(&symbols, string_from_cstring("int"), (type_info) {
             .kind = TYPE_TYPE,
             .value.id_of_underlying_type = int_id,
     });
-    symbol_table_insert(global_symbols, string_from_cstring("bool"), (type_info) {
+    symbol_table_insert(&symbols, string_from_cstring("bool"), (type_info) {
             .kind = TYPE_TYPE,
             .value.id_of_underlying_type = bool_id,
     });
-    // HACK: 'main' is predefined because currently functions can only be ASSIGNED, not DECLARED
-    symbol_table_insert(global_symbols, string_from_cstring("main"), (type_info){
+    // symbol_table_insert(&symbols, string_from_cstring("type"), (type_info) {
+    //         .kind = TYPE_TYPE,
+    //         value.id_of_underlying_type = type_id,
+    // });
+    // HACK: 'main' is predefined because currently functions can only be ASSIGNED, not DECLARED.
+    //        This can go away once 'main :: func() { // ...' is parseable.
+    symbol_table_insert(&symbols, string_from_cstring("main"), (type_info){
         .kind = TYPE_FUNCTION,
         .value.function = { .argument_types = TYPE_INFO_ID_INVALID, .return_types = TYPE_INFO_ID_INVALID },
     });
+    // This is where type_infos for other top-level declarations would be inserted
 
     typecheck_state state = {
-        .symbols = global_symbols,
-        .global_type_infos = &global_type_infos,
+        .symbols = &symbols,
+        .type_info_registry = &type_info_registry,
     };
 
-    statement_node *current_statement = first_statement;
-    while (current_statement != NULL) {
-        typecheck_statement(&state, current_statement);
-        current_statement = current_statement->next;
+    typecheck_statement(&state, statement);
+
+    if (print_symbols_when_done) {
+        print_symbol_table(&symbols);
     }
+
+    symbol_table_free(symbols);
 }
 
 void print_type_info(void *info) {
