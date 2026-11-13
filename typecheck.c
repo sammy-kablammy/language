@@ -14,8 +14,7 @@ typedef struct type_info {
         TYPE_INVALID = 0,
 
         // primitives
-        TYPE_INT,
-        TYPE_BOOL,
+        TYPE_PRIMITIVE,
 
         // compound types
         TYPE_FUNCTION,
@@ -86,18 +85,31 @@ void symbol_table_insert(symbol_table *symbols, string identifier, type_info_id 
     hash_table_insert(&symbols->table, identifier, &id);
 }
 
-bool are_types_compatible(typecheck_state *state, type_info t1, type_info t2) {
-    (void)state;
+bool are_types_compatible(typecheck_state *state, type_info_id id1, type_info_id id2) {
+    if (id1 == id2) {
+        // Direct comparison of primitive types, for example:
+        //   "5 + 7"
+        //   "true || false"
+        return true;
+    }
+
+    type_info t1 = type_info_from_id(state, id1);
+    type_info t2 = type_info_from_id(state, id2);
+
     if (t1.kind != t2.kind) {
+        // Category error, for example:
+        //   "5 + mystruct"
+        //   "mystruct - myfunction"
+        //   "bool + true"
         return false;
     }
-    switch (t1.kind) {
-        // Primitive types are compared directly
-        case TYPE_INT: // fall through
-        case TYPE_BOOL:
-            return t1.kind == t2.kind;
-        // Compound types are compared structurally (duck typed). at least
-        // functions are. currently. idk.
+
+    switch (t1.kind) { // aka t2.kind
+        // Primitive types are compared *literally*
+        case TYPE_PRIMITIVE:
+            // TODO (sam) how is this different from the above check? (this comment may desync, if so ignore)
+            return id1 == id2;
+        // Compound types are compared *structurally*
         case TYPE_FUNCTION:
             if (t1.value.function.argument_types != TYPE_INFO_ID_INVALID || t2.value.function.argument_types != TYPE_INFO_ID_INVALID) {
                 panic("haven't implemented type checking of function arguments");
@@ -111,28 +123,31 @@ bool are_types_compatible(typecheck_state *state, type_info t1, type_info t2) {
     }
 }
 
-type_info typecheck_expression(typecheck_state *state, expression_node *expression);
+type_info_id typecheck_expression(typecheck_state *state, expression_node *expression);
 void typecheck_statement(typecheck_state *state, statement_node *statement);
 void print_symbol_table(typecheck_state *state, const char *name);
 
 // TODO: ensure operator matches types. for example '123 * true' should cause a type error
-type_info typecheck_infix_expression(typecheck_state *state, infix_node infix) {
-    type_info lhs_type = typecheck_expression(state, infix.left);
-    type_info rhs_type = typecheck_expression(state, infix.right);
+type_info_id typecheck_infix_expression(typecheck_state *state, infix_node infix) {
+    type_info_id lhs_type_id = typecheck_expression(state, infix.left);
+    type_info_id rhs_type_id = typecheck_expression(state, infix.right);
+    type_info lhs_type = type_info_from_id(state, lhs_type_id);
+    type_info rhs_type = type_info_from_id(state, rhs_type_id);
 
-    if (!are_types_compatible(state, lhs_type, rhs_type)) {
+    if (!are_types_compatible(state, lhs_type_id, rhs_type_id)) {
         panic("type error: infix expression lhs type (%d) doesn't match rhs type (%d)", lhs_type.kind, rhs_type.kind);
     }
-    return lhs_type;
+    return lhs_type_id;
 }
 
-type_info typecheck_function_declaration(typecheck_state *state, function_node function) {
+type_info_id typecheck_function_declaration(typecheck_state *state, function_node function) {
     type_info type = { .kind = TYPE_FUNCTION };
     // TODO typecheck arguments (functions can't have arguments yet)
     type.value.function.argument_types = TYPE_INFO_ID_INVALID;
     // TODO typecheck return expressions (functions can't have return types yet)
     type.value.function.return_types = TYPE_INFO_ID_INVALID;
 
+    type_info_id id = type_info_alloc(state, type);
 
 
     // save
@@ -155,19 +170,24 @@ type_info typecheck_function_declaration(typecheck_state *state, function_node f
 
 
 
-    return type;
+    return id;
 }
 
-type_info typecheck_expression(typecheck_state *state, expression_node *expression) {
+type_info_id typecheck_expression(typecheck_state *state, expression_node *expression) {
     type_info_id id = TYPE_INFO_ID_INVALID;
     switch (expression->kind) {
         case INT:
-            return (type_info){ .kind = TYPE_INT };
+            // TODO find a way to dedupe this
+            assert(symbol_table_lookup(state, string_from_cstring("int"), &id));
+            assert(type_info_from_id(state, id).kind == TYPE_TYPE);
+            return type_info_from_id(state, id).value.underlying_type;
         case BOOL:
-            return (type_info){ .kind = TYPE_BOOL };
+            assert(symbol_table_lookup(state, string_from_cstring("bool"), &id));
+            assert(type_info_from_id(state, id).kind == TYPE_TYPE);
+            return type_info_from_id(state, id).value.underlying_type;
         case IDENTIFIER:
             if (symbol_table_lookup(state, expression->value.identifier, &id)) {
-                return type_info_from_id(state, id);
+                return id;
             } else {
                 cprintf("Could not find type of (\"%S\") in scope\n", expression->value.identifier);
                 panic("type error");
@@ -198,14 +218,21 @@ void typecheck_declaration(typecheck_state *state, declaration_node declaration)
         panic("type error: declaration used non-type symbol 'thing: HERE = expression'");
     }
 
-    type_info expression_type = typecheck_expression(state, declaration.expression);
+    type_info_id id_of_expression_type = typecheck_expression(state, declaration.expression);
+    type_info expression_type = type_info_from_id(state, id_of_expression_type);
 
     type_info desired_type = type_info_from_id(state, info_of_desired_type.value.underlying_type);
     if (desired_type.kind == TYPE_TYPE) {
         // panic("first-class types not yet supported");
     } else {
-        if (!are_types_compatible(state, desired_type, expression_type)) {
-            panic("type error: desired type (%d) does not match expression type (%d)", desired_type.kind, expression_type.kind);
+        if (!are_types_compatible(state, info_of_desired_type.value.underlying_type, id_of_expression_type)) {
+            panic(
+                "type error: desired type (id=%d kind=%d) does not match expression type (id=%d kind=%d)",
+                info_of_desired_type.value.underlying_type,
+                desired_type.kind,
+                id_of_expression_type,
+                expression_type.kind
+            );
         }
     }
 
@@ -213,17 +240,21 @@ void typecheck_declaration(typecheck_state *state, declaration_node declaration)
 }
 
 void typecheck_assignment(typecheck_state *state, assignment_node assignment) {
-    type_info_id id_of_lhs_type;
-    if (!symbol_table_lookup(state, assignment.lhs, &id_of_lhs_type)) {
+
+    type_info_id lhs_type_id;
+    if (!symbol_table_lookup(state, assignment.lhs, &lhs_type_id)) {
         cprintf("\ntype error: lhs of identifier (\"%S\") not found in current or parent scope\n", assignment.lhs);
         panic("type error");
     }
-    type_info lhs_type = type_info_from_id(state, id_of_lhs_type);
+    type_info lhs_type = type_info_from_id(state, lhs_type_id);
 
-    type_info rhs_type = typecheck_expression(state, assignment.expression);
-    if (!are_types_compatible(state, lhs_type, rhs_type)) {
+    type_info_id rhs_type_id = typecheck_expression(state, assignment.expression);
+    type_info rhs_type = type_info_from_id(state, rhs_type_id);
+
+    if (!are_types_compatible(state, lhs_type_id, rhs_type_id)) {
         panic("type error: Assignment's RHS type (%d) does not match LHS type (%d)", rhs_type.kind, lhs_type.kind);
     }
+
 }
 
 void typecheck_statement(typecheck_state *state, statement_node *statement) {
@@ -258,9 +289,9 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
     const type_info_id type_type_id = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE }); // cycle
     // the rest of the primitive types go after invalid and the metatype
     // Each type gets a primitive type, and a "type" so it is accessible by name
-    const type_info_id int_id = type_info_alloc(&state, (type_info) { .kind = TYPE_INT });
+    const type_info_id int_id = type_info_alloc(&state, (type_info) { .kind = TYPE_PRIMITIVE });
     const type_info_id int_type = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = int_id });
-    const type_info_id bool_id = type_info_alloc(&state, (type_info) { .kind = TYPE_BOOL });
+    const type_info_id bool_id = type_info_alloc(&state, (type_info) { .kind = TYPE_PRIMITIVE });
     const type_info_id bool_type = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = bool_id });
 
     // populate builtin symbols
@@ -284,15 +315,13 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
 
 void print_type_info(typecheck_state *state, type_info_id id) {
     type_info info = type_info_from_id(state, id);
+    printf("(kind=%d) ", info.kind);
     switch (info.kind) {
         case TYPE_INVALID:
             panic("invalid type, this shouldn't be here");
             break;
-        case TYPE_INT:
-            cprintf("int");
-            break;
-        case TYPE_BOOL:
-            cprintf("bool");
+        case TYPE_PRIMITIVE:
+            cprintf("primitive (todo print name here)");
             break;
         case TYPE_FUNCTION:
             cprintf("function (argument/return types not yet printed here)");
