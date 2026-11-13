@@ -208,7 +208,7 @@ void typecheck_declaration(typecheck_state *state, declaration_node declaration)
         }
     }
 
-    symbol_table_insert(state->symbols, declaration.identifier, id_of_desired_type);
+    symbol_table_insert(state->symbols, declaration.identifier, info_of_desired_type.value.underlying_type);
 }
 
 void typecheck_assignment(typecheck_state *state, assignment_node assignment) {
