@@ -206,7 +206,8 @@ void typecheck_declaration(typecheck_state *state, declaration_node declaration)
     type_info_id id_of_lhs_type;
     if (symbol_table_lookup(state, declaration.identifier, &id_of_lhs_type)) {
         // TODO consider child<->parent scope shadowing (same-scope shadowing likely banned)
-        panic("type error: shadowing is not supported (at least not currently)");
+        cfprintf(stderr, "type error: this identifier (\"%S\") has already been used.", declaration.identifier);
+        panic("type error: shadowing is not supported.");
     }
 
     type_info_id id_of_desired_type;
@@ -290,8 +291,8 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
     // the rest of the primitive types go after invalid and the metatype
     // Each type gets a primitive type, and a "type" so it is accessible by name
     const type_info_id int_id = type_info_alloc(&state, (type_info) { .kind = TYPE_PRIMITIVE });
-    const type_info_id int_type = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = int_id });
     const type_info_id bool_id = type_info_alloc(&state, (type_info) { .kind = TYPE_PRIMITIVE });
+    const type_info_id int_type = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = int_id });
     const type_info_id bool_type = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = bool_id });
 
     // populate builtin symbols
@@ -309,6 +310,10 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
 
     typecheck_statement(&state, statement);
 
+    if (debug_print_symbols) {
+        print_symbol_table(&state, "top level symbols");
+    }
+
     symbol_table_free(symbols);
     array_free_contents(&type_infos);
 }
@@ -321,13 +326,13 @@ void print_type_info(typecheck_state *state, type_info_id id) {
             panic("invalid type, this shouldn't be here");
             break;
         case TYPE_PRIMITIVE:
-            cprintf("primitive (todo print name here)");
+            cprintf("primitive whose id is %u", id);
             break;
         case TYPE_FUNCTION:
             cprintf("function (argument/return types not yet printed here)");
             break;
         case TYPE_TYPE:
-            cprintf("type whose underlying ID is (%u)", info.value.underlying_type);
+            cprintf("type whose underlying ID is %u", info.value.underlying_type);
             break;
     }
 }
@@ -336,15 +341,15 @@ void _print_symbol_table_callback(string key, void *value, void *userdata) {
     type_info_id id = *(type_info_id *)value;
     typecheck_state *state = userdata;
 
-    cprintf("| \"%S\" <", key);
+    cprintf("| \"%S\" ", key);
     print_type_info(state, id);
-    cprintf(">\n");
-
+    cprintf("\n");
 }
 
 void print_symbol_table(typecheck_state *state, const char *name) {
     symbol_table *symbols = state->symbols;
     printf("================= %s =================\n", name);
+    printf("| identifier, type_info\n");
     hash_table_foreach(symbols->table, _print_symbol_table_callback, state);
     symbols = symbols->parent;
     while (symbols != NULL) {
