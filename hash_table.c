@@ -46,8 +46,8 @@ void hash_table_insert(hash_table *table, string key, uint32_t value) {
     table->entries[position] = (hash_entry){
         .is_used = true,
         .key = key,
+        .value = value,
     };
-    table->entries[position].value = value;
     table->num_entries_used += 1;
 
     if (table->num_entries_used < table->num_entries_allocated / 2) {
