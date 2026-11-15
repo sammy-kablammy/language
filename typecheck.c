@@ -10,8 +10,6 @@ typedef struct {
 
 typedef struct type_info {
     enum {
-        TYPE_INVALID = 0,
-
         // primitives
         TYPE_PRIMITIVE,
 
@@ -44,9 +42,6 @@ type_info_id type_info_alloc(typecheck_state *state, type_info info) {
 }
 
 type_info type_info_from_id(typecheck_state *state, type_info_id id) {
-    if (id == TYPE_INFO_ID_INVALID) {
-        panic("cannot look up TYPE_INFO_ID_INVALID");
-    }
     type_info out = { 0 };
     array_get(state->type_infos, id, &out);
     return out;
@@ -286,8 +281,9 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
     };
 
     // populate builtin types
-    type_info_alloc(&state, (type_info) { .kind = TYPE_INVALID }); // invalid needs to be 0 so this goes here, unused
-    // type_type forms a cycle (its underlying type is itself). must go first so that it gets ID 1.
+    // Unused placeholder so that TYPE_INFO_ID_INVALID (0) doesn't map to a real type_info
+    type_info_alloc(&state, (type_info){ .kind = TYPE_PRIMITIVE });
+    // type_type forms a cycle (its underlying type is itself). must go first so that it does in fact get its own id
     const type_info_id type_type_id = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = 1 });
     assert(type_type_id == 1);
     // the rest of the primitive types go after invalid and the metatype
@@ -317,11 +313,11 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
 }
 
 void print_type_info(typecheck_state *state, type_info_id id) {
+    if (id == TYPE_INFO_ID_INVALID) {
+        return;
+    }
     type_info info = type_info_from_id(state, id);
     switch (info.kind) {
-        case TYPE_INVALID:
-            panic("invalid type, this shouldn't be here");
-            break;
         case TYPE_PRIMITIVE:
             cprintf("primitive whose id is %u", id);
             break;
