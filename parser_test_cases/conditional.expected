@@ -1,0 +1,20 @@
+x: int = 3
+y: int = 5
+if x < y {
+    if y - x > 2 {
+        return thing
+    }
+    else {
+        if y == 5 {
+            return stuff
+        }
+        else {
+            if y == 6 {
+                return other_stuff
+            }
+        }
+    }
+}
+else {
+    return jawn
+}

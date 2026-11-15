@@ -74,15 +74,20 @@ typedef struct declaration_node {
 } declaration_node;
 
 typedef struct assignment_node {
-	string lhs;
-	expression_node *expression;
+    string lhs;
+    expression_node *expression;
 } assignment_node;
 
 typedef struct while_loop_node {
-	expression_node *condition;
+    expression_node *condition;
     statement_node *body;
 } while_loop_node;
 
+typedef struct conditional_node {
+    expression_node *condition;
+    statement_node *body;
+    statement_node *alt_body; // not guaranteed to be non-null
+} conditional_node;
 typedef struct function_node {
     statement_node *body;
 } function_node;
@@ -92,14 +97,17 @@ struct statement_node {
         DECLARATION,
         ASSIGNMENT,
         WHILE_LOOP,
+		CONDITIONAL,
         RETURN,
+        BREAK,
+        CONTINUE,
     } kind;
 
     union {
         declaration_node declaration;
         assignment_node assignment;
         while_loop_node while_loop;
-        function_node function;
+        conditional_node conditional;
         // This one's a pointer because a return statement may or may not have
         // an expression with it. NULL pointer represents plain return.
         expression_node *maybe_return_expression;
@@ -259,6 +267,14 @@ statement_node *parse_statement(parser_state *state) {
                 stmt->value.maybe_return_expression = parse_expression(state, MIN_PREC);
             }
             break;
+        case TOKEN_BREAK:
+            stmt->kind = BREAK;
+            parser_advance(state);
+            break;
+        case TOKEN_CONTINUE:
+            stmt->kind = CONTINUE;
+            parser_advance(state);
+            break;
         case TOKEN_IDENTIFIER:
             *stmt = parse_declaration_or_assignment(state);
             break;
@@ -276,6 +292,47 @@ statement_node *parse_statement(parser_state *state) {
             }
             parser_advance(state);
             break;
+		case TOKEN_IF:
+            stmt->kind = CONDITIONAL;
+            parser_advance(state);
+			stmt->value.conditional.condition = parse_expression(state, MIN_PREC);
+            if (state->current_token.kind != TOKEN_LBRACE) {
+                parser_error(state, "Expected '{' after if-statement condition", state->current_token);
+            }
+            parser_advance(state);
+			stmt->value.conditional.body = parse_block(state);
+            if (state->current_token.kind != TOKEN_RBRACE) {
+                parser_error(state, "Expected '}' after if-statement body", state->current_token);
+            }
+            parser_advance(state);
+            if (state->current_token.kind != TOKEN_END_OF_LINE && state->current_token.kind != TOKEN_ELSE) {
+                parser_error(state, "Expected new line or else before next statement");
+            }
+            parser_eat_newlines(state);
+            // capture any potential elses since they shouldnt count as their own statement
+            if (state->current_token.kind == TOKEN_ELSE) {
+                parser_advance(state);
+                // else {
+                if (state->current_token.kind == TOKEN_LBRACE) {
+                    parser_advance(state);
+                    stmt->value.conditional.alt_body = parse_block(state);
+                    if (state->current_token.kind != TOKEN_RBRACE) {
+                        parser_error(state, "Expected '}' after else body", state->current_token);
+                    }
+                    parser_advance(state);
+                }
+                // else if
+                else if (state->current_token.kind == TOKEN_IF) {
+                    stmt->value.conditional.alt_body = parse_statement(state);
+                }
+                else {
+                    parser_error(state, "Unexpected syntax after else keyword: '%T'", state->current_token);
+                }
+            }
+            parser_eat_newlines(state);
+            return stmt;
+        case TOKEN_ELSE:
+            parser_error(state, "Unrecognized syntax: else statement with no preceding if statement.");
         default:
             parser_error(state, "Expected statement, got %T", state->current_token);
     }
@@ -383,6 +440,8 @@ int sprint_token(char *buf, token t) {
 			break;
 		case TOKEN_INTEGER:
 			return sprintf(buf, "%ld", t.value.integer);
+        case TOKEN_RETURN:
+            return sprintf(buf, "return");
 		case TOKEN_LESS_THAN_OR_EQUAL_TO:
             return sprintf(buf, "<=");
 		case TOKEN_GREATER_THAN_OR_EQUAL_TO:
@@ -393,6 +452,10 @@ int sprint_token(char *buf, token t) {
             return sprintf(buf, "!=");
         case TOKEN_FUNCTION:
             return sprintf(buf, "func");
+        case TOKEN_IF:
+            return sprintf(buf, "if");
+        case TOKEN_ELSE:
+            return sprintf(buf, "else");
 		default:
 			panic("print_token: unknown token kind=%d", t.kind);
 	}

@@ -1,0 +1,31 @@
+x: int = 3
+y: int = 5
+
+if x < y {
+    if y - x > 2 {
+        return thing
+    }
+    // showing that else if on the same line can work
+    else if y == 5 {
+        return stuff
+    }
+    // showing that else if on separate lines can work
+    else {
+        if y == 6 {
+            return other_stuff
+        }
+    }
+}
+
+
+
+
+// newlines and comments between if and else are valid
+/* even
+multi
+line
+comments */
+
+else {
+    return jawn
+}
