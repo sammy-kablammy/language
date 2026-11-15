@@ -1,11 +1,12 @@
 ================= symbols for function declaration =================
-| "is_also_false" <bool>
-| "is_false" <bool>
-| "x" <int>
-| "y" <int>
-| "is_true" <bool>
-=== PARENT
-| "int" <type whose underlying ID is (2)>
-| "bool" <type whose underlying ID is (4)>
-| "main" <function (argument/return types not yet printed here)>
+| "is_also_false" | primitive whose id is 3
+| "is_false" | primitive whose id is 3
+| "x" | primitive whose id is 2
+| "y" | primitive whose id is 2
+| "is_true" | primitive whose id is 3
+=== and now for its parent symbol table
+| "type" | type whose underlying ID is 1
+| "main" | function (todo print argument/return types)
+| "int" | type whose underlying ID is 2
+| "bool" | type whose underlying ID is 3
 =============== END symbols for function declaration ===============
