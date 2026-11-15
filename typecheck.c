@@ -281,11 +281,9 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
     };
 
     // populate builtin types
-    // Unused placeholder so that TYPE_INFO_ID_INVALID (0) doesn't map to a real type_info
-    type_info_alloc(&state, (type_info){ .kind = TYPE_PRIMITIVE });
-    // type_type forms a cycle (its underlying type is itself). must go first so that it does in fact get its own id
-    const type_info_id type_type_id = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = 1 });
-    assert(type_type_id == 1);
+    // placeholder is necessary so that TYPE_INFO_ID_INVALID (0) doesn't map to a real type_info
+    const type_info_id unused_placeholder = type_info_alloc(&state, (type_info){ .kind = TYPE_PRIMITIVE });
+    const type_info_id type_type_id = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = unused_placeholder + 1 });
     // the rest of the primitive types go after invalid and the metatype
     // Each type gets a primitive type, and a "type" so it is accessible by name
     const type_info_id int_id = type_info_alloc(&state, (type_info) { .kind = TYPE_PRIMITIVE });
