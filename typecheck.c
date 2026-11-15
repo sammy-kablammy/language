@@ -1,12 +1,11 @@
 typedef uint32_t type_info_id;
 const type_info_id TYPE_INFO_ID_INVALID = 0;
 
-struct type_info;
-
 typedef struct {
-    // there could be 0, 1, or many argument or return types
+    // there could be 0, 1, or many argument types
     type_info_id argument_types;
-    type_info_id return_types;
+    // there could be 0 or 1 return type
+    type_info_id return_type;
 } function_type_info;
 
 typedef struct type_info {
@@ -114,7 +113,7 @@ bool are_types_compatible(typecheck_state *state, type_info_id id1, type_info_id
             if (t1.value.function.argument_types != TYPE_INFO_ID_INVALID || t2.value.function.argument_types != TYPE_INFO_ID_INVALID) {
                 panic("haven't implemented type checking of function arguments");
             }
-            if (t1.value.function.return_types != TYPE_INFO_ID_INVALID || t2.value.function.return_types != TYPE_INFO_ID_INVALID) {
+            if (t1.value.function.return_type != TYPE_INFO_ID_INVALID || t2.value.function.return_type != TYPE_INFO_ID_INVALID) {
                 panic("haven't implemented type checking of function return types");
             }
             return true;
@@ -145,7 +144,7 @@ type_info_id typecheck_function_declaration(typecheck_state *state, function_nod
     // TODO typecheck arguments (functions can't have arguments yet)
     type.value.function.argument_types = TYPE_INFO_ID_INVALID;
     // TODO typecheck return expressions (functions can't have return types yet)
-    type.value.function.return_types = TYPE_INFO_ID_INVALID;
+    type.value.function.return_type = TYPE_INFO_ID_INVALID;
 
     type_info_id id = type_info_alloc(state, type);
 
@@ -302,7 +301,7 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
     //        This can go away once 'main :: func() { // ...' is parseable.
     const type_info_id secret_main_type = type_info_alloc(&state, (type_info) {
         .kind = TYPE_FUNCTION,
-        .value.function = { .argument_types = TYPE_INFO_ID_INVALID, .return_types = TYPE_INFO_ID_INVALID },
+        .value.function = { .argument_types = TYPE_INFO_ID_INVALID, .return_type = TYPE_INFO_ID_INVALID },
     });
     symbol_table_insert(state.symbols, string_from_cstring("main"), secret_main_type);
     // This is where type_infos for other top-level declarations would be inserted
@@ -347,11 +346,10 @@ void _print_symbol_table_callback(string key, void *value, void *userdata) {
 void print_symbol_table(typecheck_state *state, const char *name) {
     symbol_table *symbols = state->symbols;
     printf("================= %s =================\n", name);
-    printf("| identifier, type_info\n");
     hash_table_foreach(symbols->table, _print_symbol_table_callback, state);
     symbols = symbols->parent;
     while (symbols != NULL) {
-        printf("=== PARENT\n");
+        printf("=== and now for its parent symbol table\n");
         hash_table_foreach(symbols->table, _print_symbol_table_callback, state);
         symbols = symbols->parent;
     }
