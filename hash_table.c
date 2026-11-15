@@ -1,4 +1,5 @@
-// string-to-blob hash table
+// Really dumb string-to-int hash table. Terrible hash function, linear probing,
+// but can be swapped out later.
 
 const int HASH_TABLE_INITIAL_ELEMENTS = 8;
 
