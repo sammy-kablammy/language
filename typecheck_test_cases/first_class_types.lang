@@ -1,0 +1,10 @@
+main = func() {
+    myint1: type = int
+    myint2: type = myint1
+    myint3: type = myint2
+    myint4: type = myint3
+
+    x: int = 100
+    y: myint1 = 200
+    z: myint4 = x + y
+}

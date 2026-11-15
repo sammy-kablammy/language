@@ -222,7 +222,16 @@ void typecheck_declaration(typecheck_state *state, declaration_node declaration)
 
     type_info desired_type = type_info_from_id(state, info_of_desired_type.value.underlying_type);
     if (desired_type.kind == TYPE_TYPE) {
-        // panic("first-class types not yet supported");
+        if (expression_type.kind != TYPE_TYPE) {
+            panic("type error: expected rhs of to be a type expression");
+        }
+
+        type_info_id new_type_id = type_info_alloc(state, (type_info){
+            .kind = TYPE_TYPE,
+            .value.underlying_type = expression_type.value.underlying_type,
+        });
+        symbol_table_insert(state->symbols, declaration.identifier, new_type_id);
+        return;
     } else {
         if (!are_types_compatible(state, info_of_desired_type.value.underlying_type, id_of_expression_type)) {
             panic(
@@ -233,9 +242,8 @@ void typecheck_declaration(typecheck_state *state, declaration_node declaration)
                 expression_type.kind
             );
         }
+        symbol_table_insert(state->symbols, declaration.identifier, info_of_desired_type.value.underlying_type);
     }
-
-    symbol_table_insert(state->symbols, declaration.identifier, info_of_desired_type.value.underlying_type);
 }
 
 void typecheck_assignment(typecheck_state *state, assignment_node assignment) {
@@ -285,7 +293,9 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
 
     // populate builtin types
     type_info_alloc(&state, (type_info) { .kind = TYPE_INVALID }); // invalid needs to be 0 so this goes here, unused
-    const type_info_id type_type_id = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE }); // cycle
+    // type_type forms a cycle (its underlying type is itself). must go first so that it gets ID 1.
+    const type_info_id type_type_id = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = 1 });
+    assert(type_type_id == 1);
     // the rest of the primitive types go after invalid and the metatype
     // Each type gets a primitive type, and a "type" so it is accessible by name
     const type_info_id int_id = type_info_alloc(&state, (type_info) { .kind = TYPE_PRIMITIVE });
@@ -294,7 +304,7 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
     const type_info_id bool_type = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = bool_id });
 
     // populate builtin symbols
-    (void)type_type_id;
+    symbol_table_insert(state.symbols, string_from_cstring("type"), type_type_id);
     symbol_table_insert(state.symbols, string_from_cstring("int"), int_type);
     symbol_table_insert(state.symbols, string_from_cstring("bool"), bool_type);
     // HACK: 'main' is predefined because currently functions can only be ASSIGNED, not DECLARED.
