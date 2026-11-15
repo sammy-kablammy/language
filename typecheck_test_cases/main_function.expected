@@ -1,7 +1,0 @@
-================= symbols for function declaration =================
-=== and now for its parent symbol table
-| "type" | type whose underlying ID is 1
-| "main" | function (todo print argument/return types)
-| "int" | type whose underlying ID is 2
-| "bool" | type whose underlying ID is 3
-=============== END symbols for function declaration ===============
