@@ -304,7 +304,7 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
         .value.function = { .argument_types = TYPE_INFO_ID_INVALID, .return_type = TYPE_INFO_ID_INVALID },
     });
     symbol_table_insert(state.symbols, string_from_cstring("main"), secret_main_type);
-    // This is where type_infos for other top-level declarations would be inserted
+    // This is where type_infos for other top-level declarations would be inserted to remove the need for forward declarations
 
     typecheck_statement(&state, statement);
 
