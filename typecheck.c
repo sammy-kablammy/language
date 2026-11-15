@@ -85,16 +85,8 @@ void symbol_table_insert(symbol_table *symbols, string identifier, type_info_id 
 }
 
 bool are_types_compatible(typecheck_state *state, type_info_id id1, type_info_id id2) {
-    if (id1 == id2) {
-        // Direct comparison of primitive types, for example:
-        //   "5 + 7"
-        //   "true || false"
-        return true;
-    }
-
     type_info t1 = type_info_from_id(state, id1);
     type_info t2 = type_info_from_id(state, id2);
-
     if (t1.kind != t2.kind) {
         // Category error, for example:
         //   "5 + mystruct"
@@ -106,7 +98,9 @@ bool are_types_compatible(typecheck_state *state, type_info_id id1, type_info_id
     switch (t1.kind) { // aka t2.kind
         // Primitive types are compared *literally*
         case TYPE_PRIMITIVE:
-            // TODO (sam) how is this different from the above check? (this comment may desync, if so ignore)
+            // Direct comparison of primitive types, for example:
+            //   "5 + 7"
+            //   "true || false"
             return id1 == id2;
         // Compound types are compared *structurally*
         case TYPE_FUNCTION:

@@ -1,5 +1,3 @@
-// Elements are stored by value.
-
 // Absolute positions are not stable. Do not hold a reference to an array
 // element between resizes.
 
