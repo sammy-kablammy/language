@@ -318,10 +318,6 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
 
     typecheck_statement(&state, statement);
 
-    if (debug_print_symbols) {
-        print_symbol_table(&state, "top level symbols");
-    }
-
     symbol_table_free(symbols);
     array_free_contents(&type_infos);
 }
