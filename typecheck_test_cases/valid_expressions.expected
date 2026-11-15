@@ -1,4 +1,4 @@
-================= symbols for function declaration =================
+================= symbols for new child scope =================
 | "two" | primitive whose id is 2
 | "result" | primitive whose id is 2
 === and now for its parent symbol table
@@ -6,4 +6,4 @@
 | "main" | function (todo print argument/return types)
 | "int" | type whose underlying ID is 2
 | "bool" | type whose underlying ID is 3
-=============== END symbols for function declaration ===============
+=============== END symbols for new child scope ===============

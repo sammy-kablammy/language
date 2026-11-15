@@ -139,35 +139,35 @@ type_info_id typecheck_infix_expression(typecheck_state *state, infix_node infix
     return lhs_type_id;
 }
 
-type_info_id typecheck_function_declaration(typecheck_state *state, function_node function) {
-    type_info type = { .kind = TYPE_FUNCTION };
-    // TODO typecheck arguments (functions can't have arguments yet)
-    type.value.function.argument_types = TYPE_INFO_ID_INVALID;
-    // TODO typecheck return expressions (functions can't have return types yet)
-    type.value.function.return_type = TYPE_INFO_ID_INVALID;
-
-    type_info_id id = type_info_alloc(state, type);
-
-
-    // save
+// A scope is a stretch of statements with its own symbol table. Any
+// declarations inside will then become invalid once out of scope.
+void typecheck_scope(typecheck_state *state, statement_node *first_statement) {
     symbol_table child_scope_symbols = symbol_table_alloc();
     child_scope_symbols.parent = state->symbols;
     state->symbols = &child_scope_symbols;
 
-    statement_node *statement = function.body;
+    statement_node *statement = first_statement;
     while (statement != NULL) {
         typecheck_statement(state, statement);
         statement = statement->next;
     }
     if (state->print_symbols_when_exiting_scope) {
-        print_symbol_table(state, "symbols for function declaration");
+        print_symbol_table(state, "symbols for new child scope");
     }
 
-    // restore
     state->symbols = child_scope_symbols.parent;
     symbol_table_free(child_scope_symbols);
+}
 
+type_info_id typecheck_function_declaration(typecheck_state *state, function_node function) {
+    type_info type = { .kind = TYPE_FUNCTION };
+    // TODO typecheck arguments here (parser doesn't emit arguments yet)
+    type.value.function.argument_types = TYPE_INFO_ID_INVALID;
+    // TODO typecheck return expressions here (parser doesn't emit return types yet)
+    type.value.function.return_type = TYPE_INFO_ID_INVALID;
+    type_info_id id = type_info_alloc(state, type);
 
+    typecheck_scope(state, function.body);
 
     return id;
 }
