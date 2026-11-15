@@ -76,7 +76,7 @@ bool symbol_table_lookup(typecheck_state *state, string identifier, type_info_id
 }
 
 void symbol_table_insert(symbol_table *symbols, string identifier, type_info_id id) {
-    hash_table_insert(&symbols->table, identifier, &id);
+    hash_table_insert(&symbols->table, identifier, id);
 }
 
 bool are_types_compatible(typecheck_state *state, type_info_id id1, type_info_id id2) {
@@ -328,8 +328,7 @@ void print_type_info(typecheck_state *state, type_info_id id) {
     }
 }
 
-void _print_symbol_table_callback(string key, void *value, void *userdata) {
-    type_info_id id = *(type_info_id *)value;
+void _print_symbol_table_callback(string key, type_info_id id, void *userdata) {
     typecheck_state *state = userdata;
 
     cprintf("| \"%S\" | ", key);
