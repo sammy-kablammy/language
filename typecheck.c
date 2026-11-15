@@ -10,23 +10,19 @@ typedef struct {
 
 typedef struct type_info {
     enum {
-        // primitives
         TYPE_PRIMITIVE,
-
         // compound types
         TYPE_FUNCTION,
         // TYPE_STRUCT,
-
-        // meta
         TYPE_TYPE,
     } kind;
     union {
-        // void *primitive; // Primitive types don't have any other info
+        // Primitive types don't have a corresponding value in this union
         function_type_info function;
         // struct_type_info structure;
-        type_info_id underlying_type; // Only used for TYPE_TYPE (this is so meta)
+        type_info_id underlying_type;
     } value;
-    type_info_id next; // to be used for function arguments
+    // type_info_id next; // NOTE to be used for function arguments
 } type_info;
 
 struct symbol_table;
@@ -79,6 +75,8 @@ void symbol_table_insert(symbol_table *symbols, string identifier, type_info_id 
     hash_table_insert(&symbols->table, identifier, id);
 }
 
+// Primitive types are compared literally
+// Compound types are compared structurally (compatible as long as fields are compatible)
 bool are_types_compatible(typecheck_state *state, type_info_id id1, type_info_id id2) {
     type_info t1 = type_info_from_id(state, id1);
     type_info t2 = type_info_from_id(state, id2);
@@ -90,14 +88,12 @@ bool are_types_compatible(typecheck_state *state, type_info_id id1, type_info_id
         return false;
     }
 
-    switch (t1.kind) { // aka t2.kind
-        // Primitive types are compared *literally*
+    switch (t1.kind) {
         case TYPE_PRIMITIVE:
             // Direct comparison of primitive types, for example:
             //   "5 + 7"
             //   "true || false"
             return id1 == id2;
-        // Compound types are compared *structurally*
         case TYPE_FUNCTION:
             if (t1.value.function.argument_types != TYPE_INFO_ID_INVALID || t2.value.function.argument_types != TYPE_INFO_ID_INVALID) {
                 panic("haven't implemented type checking of function arguments");
@@ -165,7 +161,6 @@ type_info_id typecheck_expression(typecheck_state *state, expression_node *expre
     type_info_id id = TYPE_INFO_ID_INVALID;
     switch (expression->kind) {
         case INT:
-            // TODO find a way to dedupe this
             assert(symbol_table_lookup(state, string_from_cstring("int"), &id));
             assert(type_info_from_id(state, id).kind == TYPE_TYPE);
             return type_info_from_id(state, id).value.underlying_type;
@@ -262,7 +257,7 @@ void typecheck_statement(typecheck_state *state, statement_node *statement) {
             typecheck_assignment(state, statement->value.assignment);
             break;
         case RETURN:
-            // TODO(sam) need a way to pass current function's type_info to typecheck_return
+            // TODO need a way to pass current function's type_info to typecheck_return
             // panic("returns are not yet typechecked");
             break;
         default:
@@ -271,7 +266,6 @@ void typecheck_statement(typecheck_state *state, statement_node *statement) {
 }
 
 void typecheck_top_level_statement(statement_node *statement, bool debug_print_symbols) {
-
     symbol_table symbols = symbol_table_alloc();
     array type_infos = array_alloc(sizeof(type_info));
     typecheck_state state = {
