@@ -205,7 +205,6 @@ type_info_id typecheck_expression(typecheck_state *state, expression_node *expre
 void typecheck_declaration(typecheck_state *state, declaration_node declaration) {
     type_info_id id_of_lhs_type;
     if (symbol_table_lookup(state, declaration.identifier, &id_of_lhs_type)) {
-        // TODO consider child<->parent scope shadowing (same-scope shadowing likely banned)
         cfprintf(stderr, "type error: this identifier (\"%S\") has already been used.", declaration.identifier);
         panic("type error: shadowing is not supported.");
     }
@@ -320,7 +319,6 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
 
 void print_type_info(typecheck_state *state, type_info_id id) {
     type_info info = type_info_from_id(state, id);
-    printf("(kind=%d) ", info.kind);
     switch (info.kind) {
         case TYPE_INVALID:
             panic("invalid type, this shouldn't be here");
@@ -329,7 +327,7 @@ void print_type_info(typecheck_state *state, type_info_id id) {
             cprintf("primitive whose id is %u", id);
             break;
         case TYPE_FUNCTION:
-            cprintf("function (argument/return types not yet printed here)");
+            cprintf("function (todo print argument/return types)");
             break;
         case TYPE_TYPE:
             cprintf("type whose underlying ID is %u", info.value.underlying_type);
@@ -341,7 +339,7 @@ void _print_symbol_table_callback(string key, void *value, void *userdata) {
     type_info_id id = *(type_info_id *)value;
     typecheck_state *state = userdata;
 
-    cprintf("| \"%S\" ", key);
+    cprintf("| \"%S\" | ", key);
     print_type_info(state, id);
     cprintf("\n");
 }
