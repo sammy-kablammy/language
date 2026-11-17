@@ -1,6 +1,8 @@
-x: int = 10
-y: int = x
+main = func() {
+    x: int = 10
+    y: int = x
 
-is_true: bool = true
-is_false: bool = false
-is_also_false: bool = is_false
+    is_true: bool = true
+    is_false: bool = false
+    is_also_false: bool = is_false
+}

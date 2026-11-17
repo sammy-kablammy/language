@@ -1,0 +1,14 @@
+================= symbols for new child scope =================
+| "myint1" | type whose underlying ID is 2
+| "myint2" | type whose underlying ID is 2
+| "myint3" | type whose underlying ID is 2
+| "myint4" | type whose underlying ID is 2
+| "x" | primitive whose id is 2
+| "y" | primitive whose id is 2
+| "z" | primitive whose id is 2
+=== and now for its parent symbol table
+| "type" | type whose underlying ID is 1
+| "main" | function (todo print argument/return types)
+| "int" | type whose underlying ID is 2
+| "bool" | type whose underlying ID is 3
+=============== END symbols for new child scope ===============
