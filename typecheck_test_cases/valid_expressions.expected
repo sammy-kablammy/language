@@ -1,8 +1,9 @@
-================= TYPE TABLE =================
-| value=   1 | key="int"
-| value=   2 | key="bool"
-=============== END TYPE TABLE ===============
-================= SYMBOL TABLE =================
-| value=   1 | key="two"
-| value=   1 | key="result"
-=============== END SYMBOL TABLE ===============
+================= symbols for new child scope =================
+| "two" | primitive whose id is 2
+| "result" | primitive whose id is 2
+=== and now for its parent symbol table
+| "type" | type whose underlying ID is 1
+| "main" | function (todo print argument/return types)
+| "int" | type whose underlying ID is 2
+| "bool" | type whose underlying ID is 3
+=============== END symbols for new child scope ===============

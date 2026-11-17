@@ -75,6 +75,12 @@ void pretty_print_statement(uint32_t num_spaces, statement_node *statement) {
                 pretty_print_expression(num_spaces, statement->value.maybe_return_expression);
             }
             break;
+        case BREAK:
+            printf("break");
+            break;
+        case CONTINUE:
+            printf("continue");
+            break;
         case WHILE_LOOP:
             printf("while ");
             pretty_print_expression(num_spaces, statement->value.while_loop.condition);
@@ -83,6 +89,22 @@ void pretty_print_statement(uint32_t num_spaces, statement_node *statement) {
             print_spaces(num_spaces);
             printf("}");
             break;
+		case CONDITIONAL:
+            printf("if ");
+            pretty_print_expression(num_spaces, statement->value.conditional.condition);
+            printf(" {\n");
+            pretty_print_block(num_spaces + INDENT_AMOUNT, statement->value.while_loop.body);
+            print_spaces(num_spaces);
+            printf("}");
+            if (statement->value.conditional.alt_body != NULL) {
+                printf("\n");
+                print_spaces(num_spaces);
+                printf("else {\n");
+                pretty_print_block(num_spaces + INDENT_AMOUNT, statement->value.conditional.alt_body);
+                print_spaces(num_spaces);
+                printf("}");
+            }
+			break;
         default:
             panic("unhandled statement kind (%d) to print", statement->kind);
     }

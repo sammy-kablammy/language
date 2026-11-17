@@ -1,3 +1,48 @@
+typedef uint32_t type_info_id;
+const type_info_id TYPE_INFO_ID_INVALID = 0;
+
+typedef struct {
+    // there could be 0, 1, or many argument types
+    type_info_id argument_types;
+    // there could be 0 or 1 return type
+    type_info_id return_type;
+} function_type_info;
+
+typedef struct type_info {
+    enum {
+        TYPE_PRIMITIVE,
+        // compound types
+        TYPE_FUNCTION,
+        // TYPE_STRUCT,
+        TYPE_TYPE,
+    } kind;
+    union {
+        // Primitive types don't have a corresponding value in this union
+        function_type_info function;
+        // struct_type_info structure;
+        type_info_id underlying_type;
+    } value;
+    // type_info_id next; // NOTE to be used for function arguments
+} type_info;
+
+struct symbol_table;
+
+typedef struct {
+    struct symbol_table *symbols;
+    array *type_infos;
+    bool print_symbols_when_exiting_scope; // (only used for testing)
+} typecheck_state;
+
+type_info_id type_info_alloc(typecheck_state *state, type_info info) {
+    return array_append(state->type_infos, (void *)&info);
+}
+
+type_info type_info_from_id(typecheck_state *state, type_info_id id) {
+    type_info out = { 0 };
+    array_get(state->type_infos, id, &out);
+    return out;
+}
+
 // Symbol table maps identifiers to types for a given scope
 typedef struct symbol_table {
     struct symbol_table *parent;
@@ -7,7 +52,7 @@ typedef struct symbol_table {
 symbol_table symbol_table_alloc() {
     return (symbol_table){
         .parent = NULL,
-        .table = hash_table_alloc(),
+        .table = hash_table_alloc(sizeof(type_info_id)),
     };
 }
 
@@ -15,134 +60,285 @@ void symbol_table_free(symbol_table symbols) {
     hash_table_free(symbols.table);
 }
 
-typedef uint32_t data_type;
-const data_type TYPE_INVALID = 0;
-string builtin_types[] = {
-    // I don't like this but eh
-    { .buf = "int", .length = sizeof("int") - 1 },
-    { .buf = "bool", .length = sizeof("bool") - 1 },
-};
-const uint32_t NUM_BUILTIN_TYPES = sizeof(builtin_types) / sizeof(builtin_types[0]);
-// User-defined types will counting after all the builtins
-
-data_type symbol_table_lookup(symbol_table *symbols, string identifier) {
+bool symbol_table_lookup(typecheck_state *state, string identifier, type_info_id *out) {
+    symbol_table *symbols = state->symbols;
     while (symbols != NULL) {
-        data_type out;
-        if (hash_table_lookup(&symbols->table, identifier, &out)) {
-            return out;
+        if (hash_table_lookup(&symbols->table, identifier, out)) {
+            return true;
         }
         symbols = symbols->parent;
     }
-    return TYPE_INVALID;
+    return false;
 }
 
-void symbol_table_insert(symbol_table *symbols, string identifier, data_type type) {
-    hash_table_insert(&symbols->table, identifier, type);
+void symbol_table_insert(symbol_table *symbols, string identifier, type_info_id id) {
+    hash_table_insert(&symbols->table, identifier, id);
 }
 
-data_type typecheck_expression(symbol_table *symbols, symbol_table *types, expression_node *expression);
+// Primitive types are compared literally
+// Compound types are compared structurally (compatible as long as fields are compatible)
+bool are_types_compatible(typecheck_state *state, type_info_id id1, type_info_id id2) {
+    type_info t1 = type_info_from_id(state, id1);
+    type_info t2 = type_info_from_id(state, id2);
+    if (t1.kind != t2.kind) {
+        // Category error, for example:
+        //   "5 + mystruct"
+        //   "mystruct - myfunction"
+        //   "bool + true"
+        return false;
+    }
+
+    switch (t1.kind) {
+        case TYPE_PRIMITIVE:
+            // Direct comparison of primitive types, for example:
+            //   "5 + 7"
+            //   "true || false"
+            return id1 == id2;
+        case TYPE_FUNCTION:
+            if (t1.value.function.argument_types != TYPE_INFO_ID_INVALID || t2.value.function.argument_types != TYPE_INFO_ID_INVALID) {
+                panic("haven't implemented type checking of function arguments");
+            }
+            if (t1.value.function.return_type != TYPE_INFO_ID_INVALID || t2.value.function.return_type != TYPE_INFO_ID_INVALID) {
+                panic("haven't implemented type checking of function return types");
+            }
+            return true;
+        default:
+            panic("haven't implemented type conversion for these type_info kinds (%d %d)", t1.kind, t2.kind);
+    }
+}
+
+type_info_id typecheck_expression(typecheck_state *state, expression_node *expression);
+void typecheck_statement(typecheck_state *state, statement_node *statement);
+void print_symbol_table(typecheck_state *state, const char *name);
 
 // TODO: ensure operator matches types. for example '123 * true' should cause a type error
-data_type typecheck_infix_expression(symbol_table *symbols, symbol_table *types, infix_node infix) {
-    data_type lhs_type = typecheck_expression(symbols, types, infix.left);
-    data_type rhs_type = typecheck_expression(symbols, types, infix.right);
-    if (lhs_type != rhs_type) {
-        panic("infix expression lhs type (%d) doesn't match rhs type (%d)", lhs_type, rhs_type);
+type_info_id typecheck_infix_expression(typecheck_state *state, infix_node infix) {
+    type_info_id lhs_type_id = typecheck_expression(state, infix.left);
+    type_info_id rhs_type_id = typecheck_expression(state, infix.right);
+    type_info lhs_type = type_info_from_id(state, lhs_type_id);
+    type_info rhs_type = type_info_from_id(state, rhs_type_id);
+
+    if (!are_types_compatible(state, lhs_type_id, rhs_type_id)) {
+        panic("type error: infix expression lhs type (%d) doesn't match rhs type (%d)", lhs_type.kind, rhs_type.kind);
     }
-    return lhs_type;
+    return lhs_type_id;
 }
 
-data_type typecheck_expression(symbol_table *symbols, symbol_table *types, expression_node *expression) {
-    data_type type;
+// A scope is a stretch of statements with its own symbol table. Any
+// declarations inside will then become invalid once out of scope.
+void typecheck_scope(typecheck_state *state, statement_node *first_statement) {
+    symbol_table child_scope_symbols = symbol_table_alloc();
+    child_scope_symbols.parent = state->symbols;
+    state->symbols = &child_scope_symbols;
+
+    statement_node *statement = first_statement;
+    while (statement != NULL) {
+        typecheck_statement(state, statement);
+        statement = statement->next;
+    }
+    if (state->print_symbols_when_exiting_scope) {
+        print_symbol_table(state, "symbols for new child scope");
+    }
+
+    state->symbols = child_scope_symbols.parent;
+    symbol_table_free(child_scope_symbols);
+}
+
+type_info_id typecheck_function_declaration(typecheck_state *state, function_node function) {
+    type_info type = { .kind = TYPE_FUNCTION };
+    // TODO typecheck arguments here (parser doesn't emit arguments yet)
+    type.value.function.argument_types = TYPE_INFO_ID_INVALID;
+    // TODO typecheck return expressions here (parser doesn't emit return types yet)
+    type.value.function.return_type = TYPE_INFO_ID_INVALID;
+    type_info_id id = type_info_alloc(state, type);
+
+    typecheck_scope(state, function.body);
+
+    return id;
+}
+
+type_info_id typecheck_expression(typecheck_state *state, expression_node *expression) {
+    type_info_id id = TYPE_INFO_ID_INVALID;
     switch (expression->kind) {
         case INT:
-            return symbol_table_lookup(types, string_from_cstring("int"));
+            assert(symbol_table_lookup(state, string_from_cstring("int"), &id));
+            assert(type_info_from_id(state, id).kind == TYPE_TYPE);
+            return type_info_from_id(state, id).value.underlying_type;
         case BOOL:
-            return symbol_table_lookup(types, string_from_cstring("bool"));
+            assert(symbol_table_lookup(state, string_from_cstring("bool"), &id));
+            assert(type_info_from_id(state, id).kind == TYPE_TYPE);
+            return type_info_from_id(state, id).value.underlying_type;
         case IDENTIFIER:
-            type = symbol_table_lookup(symbols, expression->value.identifier);
-            if (type != TYPE_INVALID) {
-                return type;
+            if (symbol_table_lookup(state, expression->value.identifier, &id)) {
+                return id;
             } else {
-                printf("Could not find type of (\"");
-                printf("\") in scope");
-                print_string(expression->value.identifier);
-                panic("Could not find identifier");
+                cprintf("Could not find type of (\"%S\") in scope\n", expression->value.identifier);
+                panic("type error");
             }
             break;
         case INFIX:
-            return typecheck_infix_expression(symbols, types, expression->value.infix);
+            return typecheck_infix_expression(state, expression->value.infix);
+        case INLINE_FUNCTION:
+            return typecheck_function_declaration(state, expression->value.function_declaration);
         default:
             panic("unhandled expression kind in typecheck_expression (%d)", expression->kind);
     }
 }
 
-void typecheck_declaration(symbol_table *symbols, symbol_table *types, declaration_node declaration) {
-    data_type lhs_type = symbol_table_lookup(symbols, declaration.identifier);
-    if (lhs_type != TYPE_INVALID) {
-        // TODO consider child<->parent scope shadowing (same-scope shadowing likely banned)
-        panic("shadowing is not supported (at least not currently)");
+void typecheck_declaration(typecheck_state *state, declaration_node declaration) {
+    type_info_id id_of_lhs_type;
+    if (symbol_table_lookup(state, declaration.identifier, &id_of_lhs_type)) {
+        cfprintf(stderr, "type error: this identifier (\"%S\") has already been used.", declaration.identifier);
+        panic("type error: shadowing is not supported.");
     }
 
-    data_type desired_type = symbol_table_lookup(types, declaration.data_type);
-    if (desired_type == TYPE_INVALID) {
-        printf("attempted to use unknown type '");
-        print_string(declaration.data_type);
-        printf("' in declaration");
-        panic("(make sure that type is defined prior to use)");
+    type_info_id id_of_desired_type;
+    if (!symbol_table_lookup(state, declaration.data_type, &id_of_desired_type)) {
+        panic("type error: declaration used unknown type 'thing: HERE = expression'");
     }
-    data_type expression_type = typecheck_expression(symbols, types, declaration.expression);
-    if (desired_type != expression_type) {
-        panic("desired type (%d) does not match expression type (%d)", desired_type, expression_type);
+    type_info info_of_desired_type = type_info_from_id(state, id_of_desired_type);
+    if (info_of_desired_type.kind != TYPE_TYPE) {
+        panic("type error: declaration used non-type symbol 'thing: HERE = expression'");
     }
 
-    symbol_table_insert(symbols, declaration.identifier, desired_type);
+    type_info_id id_of_expression_type = typecheck_expression(state, declaration.expression);
+    type_info expression_type = type_info_from_id(state, id_of_expression_type);
+
+    type_info desired_type = type_info_from_id(state, info_of_desired_type.value.underlying_type);
+    if (desired_type.kind == TYPE_TYPE) {
+        if (expression_type.kind != TYPE_TYPE) {
+            panic("type error: expected rhs of to be a type expression");
+        }
+
+        type_info_id new_type_id = type_info_alloc(state, (type_info){
+            .kind = TYPE_TYPE,
+            .value.underlying_type = expression_type.value.underlying_type,
+        });
+        symbol_table_insert(state->symbols, declaration.identifier, new_type_id);
+        return;
+    } else {
+        if (!are_types_compatible(state, info_of_desired_type.value.underlying_type, id_of_expression_type)) {
+            panic(
+                "type error: desired type (id=%d kind=%d) does not match expression type (id=%d kind=%d)",
+                info_of_desired_type.value.underlying_type,
+                desired_type.kind,
+                id_of_expression_type,
+                expression_type.kind
+            );
+        }
+        symbol_table_insert(state->symbols, declaration.identifier, info_of_desired_type.value.underlying_type);
+    }
 }
 
-void typecheck_assignment(symbol_table *symbols, symbol_table *types, assignment_node assignment) {
-    data_type lhs_type = symbol_table_lookup(symbols, assignment.lhs);
-    if (lhs_type == TYPE_INVALID) {
-        printf("\nlhs of identifier (\"");
-        print_string(assignment.lhs);
-        printf("\") not found in current or parent scope\n");
-        panic("assignment typecheck failed");
+void typecheck_assignment(typecheck_state *state, assignment_node assignment) {
+
+    type_info_id lhs_type_id;
+    if (!symbol_table_lookup(state, assignment.lhs, &lhs_type_id)) {
+        cprintf("\ntype error: lhs of identifier (\"%S\") not found in current or parent scope\n", assignment.lhs);
+        panic("type error");
+    }
+    type_info lhs_type = type_info_from_id(state, lhs_type_id);
+
+    type_info_id rhs_type_id = typecheck_expression(state, assignment.expression);
+    type_info rhs_type = type_info_from_id(state, rhs_type_id);
+
+    if (!are_types_compatible(state, lhs_type_id, rhs_type_id)) {
+        panic("type error: Assignment's RHS type (%d) does not match LHS type (%d)", rhs_type.kind, lhs_type.kind);
     }
 
-    data_type rhs_type = typecheck_expression(symbols, types, assignment.expression);
-    if (lhs_type != rhs_type) {
-        panic("Assignment's RHS type does not match LHS type");
-    }
 }
 
-void typecheck_statement(symbol_table *symbols, symbol_table *types, statement_node *statement) {
+void typecheck_statement(typecheck_state *state, statement_node *statement) {
     switch (statement->kind) {
         case DECLARATION:
-            typecheck_declaration(symbols, types, statement->value.declaration);
+            typecheck_declaration(state, statement->value.declaration);
             break;
         case ASSIGNMENT:
-            typecheck_assignment(symbols, types, statement->value.assignment);
+            typecheck_assignment(state, statement->value.assignment);
+            break;
+        case RETURN:
+            // TODO need a way to pass current function's type_info to typecheck_return
+            // panic("returns are not yet typechecked");
             break;
         default:
             panic("typecheck_statement: unhandled statement kind (%d)", statement->kind);
     }
 }
 
-void typecheck_entire_program(symbol_table *global_symbols, symbol_table *global_types, statement_node *first_statement) {
-    // Start counting types at 1, since 0 represents TYPE_INVALID
-    data_type next_available_type_id = 1;
+void typecheck_top_level_statement(statement_node *statement, bool debug_print_symbols) {
+    symbol_table symbols = symbol_table_alloc();
+    array type_infos = array_alloc(sizeof(type_info));
+    typecheck_state state = {
+        .symbols = &symbols,
+        .type_infos = &type_infos,
+        .print_symbols_when_exiting_scope = debug_print_symbols,
+    };
 
-    for (uint32_t i = 0; i < NUM_BUILTIN_TYPES; i++) {
-        symbol_table_insert(global_types, builtin_types[i], i + 1);
-        next_available_type_id += 1;
+    // populate builtin types
+    // placeholder is necessary so that TYPE_INFO_ID_INVALID (0) doesn't map to a real type_info
+    const type_info_id unused_placeholder = type_info_alloc(&state, (type_info){ .kind = TYPE_PRIMITIVE });
+    const type_info_id type_type_id = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = unused_placeholder + 1 });
+    // the rest of the primitive types go after invalid and the metatype
+    // Each type gets a primitive type, and a "type" so it is accessible by name
+    const type_info_id int_id = type_info_alloc(&state, (type_info) { .kind = TYPE_PRIMITIVE });
+    const type_info_id bool_id = type_info_alloc(&state, (type_info) { .kind = TYPE_PRIMITIVE });
+    const type_info_id int_type = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = int_id });
+    const type_info_id bool_type = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = bool_id });
+
+    // populate builtin symbols
+    symbol_table_insert(state.symbols, string_from_cstring("type"), type_type_id);
+    symbol_table_insert(state.symbols, string_from_cstring("int"), int_type);
+    symbol_table_insert(state.symbols, string_from_cstring("bool"), bool_type);
+    // HACK: 'main' is predefined because currently functions can only be ASSIGNED, not DECLARED.
+    //        This can go away once 'main :: func() { // ...' is parseable.
+    const type_info_id secret_main_type = type_info_alloc(&state, (type_info) {
+        .kind = TYPE_FUNCTION,
+        .value.function = { .argument_types = TYPE_INFO_ID_INVALID, .return_type = TYPE_INFO_ID_INVALID },
+    });
+    symbol_table_insert(state.symbols, string_from_cstring("main"), secret_main_type);
+    // This is where type_infos for other top-level declarations would be inserted to remove the need for forward declarations
+
+    typecheck_statement(&state, statement);
+
+    symbol_table_free(symbols);
+    array_free_contents(&type_infos);
+}
+
+void print_type_info(typecheck_state *state, type_info_id id) {
+    if (id == TYPE_INFO_ID_INVALID) {
+        return;
     }
-
-    statement_node *current_statement = first_statement;
-    while (current_statement != NULL) {
-        typecheck_statement(global_symbols, global_types, current_statement);
-        current_statement = current_statement->next;
+    type_info info = type_info_from_id(state, id);
+    switch (info.kind) {
+        case TYPE_PRIMITIVE:
+            cprintf("primitive whose id is %u", id);
+            break;
+        case TYPE_FUNCTION:
+            cprintf("function (todo print argument/return types)");
+            break;
+        case TYPE_TYPE:
+            cprintf("type whose underlying ID is %u", info.value.underlying_type);
+            break;
     }
 }
 
-void print_symbol_table(symbol_table *symbols, char *name) {
-    hash_table_print(symbols->table,name);
+void _print_symbol_table_callback(string key, type_info_id id, void *userdata) {
+    typecheck_state *state = userdata;
+
+    cprintf("| \"%S\" | ", key);
+    print_type_info(state, id);
+    cprintf("\n");
+}
+
+void print_symbol_table(typecheck_state *state, const char *name) {
+    symbol_table *symbols = state->symbols;
+    printf("================= %s =================\n", name);
+    hash_table_foreach(symbols->table, _print_symbol_table_callback, state);
+    symbols = symbols->parent;
+    while (symbols != NULL) {
+        printf("=== and now for its parent symbol table\n");
+        hash_table_foreach(symbols->table, _print_symbol_table_callback, state);
+        symbols = symbols->parent;
+    }
+    printf("=============== END %s ===============\n", name);
 }

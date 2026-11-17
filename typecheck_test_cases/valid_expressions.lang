@@ -1,3 +1,5 @@
-two: int = 2
-result: int = 100 * two + 1
-result = result / 3
+main = func() {
+    two: int = 2
+    result: int = 100 * two + 1
+    result = result / 3
+}

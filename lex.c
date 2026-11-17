@@ -30,7 +30,11 @@ typedef struct token {
         TOKEN_EQUAL_TO,
         TOKEN_NOT_EQUAL_TO,
         TOKEN_WHILE,
+        TOKEN_IF,
+        TOKEN_ELSE,
         TOKEN_FUNCTION,
+        TOKEN_BREAK,
+        TOKEN_CONTINUE,
     } kind;
     union {
         string identifier; // Only used for identifiers
@@ -44,7 +48,9 @@ void token_array_append(token_array *arr, token tok) {
     array_append(arr, &tok);
 }
 token token_array_get(token_array *arr, int i) {
-    return *(token *)array_get(arr, i);
+    token out = { 0 };
+    array_get(arr, i, &out);
+    return out;
 }
 
 bool is_keyword_character(char ch) {
@@ -97,8 +103,24 @@ void lex_identifier_or_keyword(string input, uint64_t *i, token *tok) {
         tok->kind = TOKEN_WHILE;
         return;
     }
+	if (string_equals_cstring(identifier, "if")) {
+        tok->kind = TOKEN_IF;
+        return;
+    }
+	if (string_equals_cstring(identifier, "else")) {
+        tok->kind = TOKEN_ELSE;
+        return;
+    }
     if (string_equals_cstring(identifier, "func")) {
         tok->kind = TOKEN_FUNCTION;
+        return;
+    }
+    if (string_equals_cstring(identifier, "break")) {
+        tok->kind = TOKEN_BREAK;
+        return;
+    }
+    if (string_equals_cstring(identifier, "continue")) {
+        tok->kind = TOKEN_CONTINUE;
         return;
     }
     // Other keywords go here
@@ -133,8 +155,7 @@ void skip_spaces(string input, uint64_t *i) {
 }
 
 token_array lex_entire_file(string input) {
-    token_array tokens;
-    array_init(&tokens, sizeof(token));
+    token_array tokens = array_alloc(sizeof(token));
 
     uint64_t i = 0;
 	int multiline_openers = 0;

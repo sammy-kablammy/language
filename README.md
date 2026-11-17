@@ -39,19 +39,19 @@ language features to parse:
 - [ ] unary operators
   - [ ] logical `!`
   - [ ] negation `-`
-- [ ] comments
-- [ ] break / continue keywords
+- [X] comments
+- [X] break / continue keywords
 - [ ] import keyword like `import "filename"`
 - [ ] correctly parse operator precedence
   - [x] infix operators
   - [ ] handle parenthesized expressions like `a * (b + c)`
 - [ ] function call expressions
   - [ ] array subscript expressions (use `[` instead of `(` for this)
-- [ ] if statements
+- [X] if statements
 - [ ] loops
   - [X] while loops
   - [ ] consider for-loop
-- [ ] function declaration expressions
+- [X] function declaration expressions
 - [ ] array declarations
 - [ ] struct declarations
 - [ ] allow expressions as the left side of assignments. for example:
@@ -68,7 +68,7 @@ typechecking phase:
 - [ ] type inference `who_knows := some_expression_here`
 - [ ] first class types, builtin type called `type`
 - [ ] casting, for inspiration see https://www.gingerbill.org/article/2026/02/23/designing-odins-casting-syntax/
-- [ ] typechecking error messages with cprintf
+- [ ] error messages
 
 future
 - bytecode generation
@@ -82,3 +82,9 @@ future
     with custom conversion codes for strings, enums, and so on
   - systematic compilation failures. should be able to write negative tests like
     "this program should fail to type check"
+  - remove calls to print_string and sprint_string, can both be replaced with
+    the compiler_printf family. generally go through and remove all printfs,
+    fprintfs, sprintfs in the main body of the compiler with cprintfs
+- go through and find TODOs; they're not all described here
+
+- compiler main() should reject invalid arguments (try `--typecheck-and-exi`)
