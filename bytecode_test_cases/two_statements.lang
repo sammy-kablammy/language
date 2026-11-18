@@ -1,3 +1,0 @@
-somenum: int = 100
-
-x: int = 123 + 456
