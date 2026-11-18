@@ -1,7 +1,7 @@
 // Convert top level statement into snippets of a bytecode program, then
 // possibly stitch them together
 
-typedef uint64_t reg;
+typedef uint32_t reg;
 const reg REGISTER_INVALID = 0;
 
 typedef uint32_t instruction_id;
@@ -33,8 +33,13 @@ typedef struct instruction {
 } instruction;
 
 typedef array bytecode_snippet;
+bytecode_snippet bytecode_snippet_alloc() {
+    return array_alloc(sizeof(bytecode_snippet));
+}
 instruction get_instruction(bytecode_snippet *snippet, int i) {
-    return *(instruction *)array_get(snippet, i);
+    instruction out;
+    array_get(snippet, i, &out);
+    return out;
 }
 void append_instruction(bytecode_snippet *snippet, instruction instr) {
     array_append(snippet, &instr);
@@ -45,19 +50,19 @@ void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
         instruction instr = get_instruction(snippet, i);
         switch (instr.kind) {
             case IMMEDIATE_S32:
-                printf("%ld  |  t%ld = %d\n", i, instr.value.immediate_s32.dest, instr.value.immediate_s32.the_s32);
+                printf("%ld  |  t%u = %d\n", i, instr.value.immediate_s32.dest, instr.value.immediate_s32.the_s32);
                 break;
             case ADD_S32:
-                printf("%ld  |  t%ld = add_s32 t%ld t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%u = add_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
                 break;
             case SUBTRACT_S32:
-                printf("%ld  |  t%ld = subtract_s32 t%ld t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%u = subtract_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
                 break;
             case MULTIPLY_S32:
-                printf("%ld  |  t%ld = multiply_s32 t%ld t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%u = multiply_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
                 break;
             case DIVIDE_S32:
-                printf("%ld  |  t%ld = divide_s32 t%ld t%ld\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%u = divide_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
                 break;
             case INSTRUCTION_INVALID:
                 panic("you forgot to initialize an instruction kind somewhere");
@@ -72,6 +77,7 @@ void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
 // knows where the result is.
 
 reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expression_node *expression);
+reg bytecodify_statement(bytecode_snippet *snippet, reg last_used_reg, symbol_table *symbols, statement_node *statement);
 
 reg bytecodify_infix_expression(bytecode_snippet *snippet, reg last_used_reg, infix_node infix) {
 
@@ -109,6 +115,19 @@ reg bytecodify_infix_expression(bytecode_snippet *snippet, reg last_used_reg, in
     return instr.dest;
 }
 
+bytecode_snippet bytecodify_function_declaration(symbol_table *parent_symbols, function_node function){
+    bytecode_snippet snippet = bytecode_snippet_alloc();
+    reg current_reg = REGISTER_INVALID;
+
+    statement_node *statement = function.body;
+    while (statement != NULL) {
+        current_reg = bytecodify_statement(&snippet, current_reg, parent_symbols, statement);
+        statement = statement->next;
+    }
+
+    return snippet;
+}
+
 reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expression_node *expression) {
     switch (expression->kind) {
         case INT:
@@ -130,43 +149,34 @@ reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expressi
     return REGISTER_INVALID;
 }
 
-bytecode_snippet bytecodify_top_level_declaration(declaration_node declaration) {
-    if (!string_equals_cstring(declaration.data_type, "int")) {
-        panic("TODO: currently assuming TLDs are ints");
-    }
-
-    bytecode_snippet snippet = { 0 };
-    array_init(&snippet, sizeof(instruction));
-
-    reg result_reg = bytecodify_expression(&snippet, REGISTER_INVALID, declaration.expression);
-    compiler_printf("bytecodified a TLD ('%S'), its result is in t%d\n", declaration.identifier, result_reg);
-
-    return snippet;
+reg bytecodify_assignment(bytecode_snippet *snippet, reg last_used_reg, symbol_table *symbols, assignment_node assignment) {
+    reg rhs = bytecodify_expression(snippet, last_used_reg, assignment.expression);
+    symbol_table_insert(symbols, assignment.lhs, rhs);
+    return rhs;
+}
+reg bytecodify_declaration(bytecode_snippet *snippet, reg last_used_reg, symbol_table *symbols, declaration_node declaration) {
+    reg rhs = bytecodify_expression(snippet, last_used_reg, declaration.expression);
+    symbol_table_insert(symbols, declaration.identifier, rhs);
+    return rhs;
 }
 
-// NOTE(sam) Placeholder until out-of-order compilation exists
-void bytecodify_entire_program(statement_node *first_statement) {
-
-    // NOTE(sam) Eventually will store bytecode snippets
-    // bytecode_program program;
-
-    statement_node *current = first_statement;
-    while (current != NULL) {
-        if (current->kind != DECLARATION) {
-            panic("currently assuming every top level statement is a declaration, got %d", current->kind);
-        }
-
-        cprintf("\n");
-        pretty_print_statement(0, current);
-        cprintf("==============================");
-        cprintf(" BYTECODE ");
-        cprintf("==============================\n");
-
-        bytecode_snippet snippet = bytecodify_top_level_declaration(current->value.declaration);
-        debug_print_bytecode_snippet(&snippet);
-        // NOTE(sam) Eventually will store bytecode snippets
-        // (but for now only printing)
-
-        current = current->next;
+reg bytecodify_statement(bytecode_snippet *snippet, reg last_used_reg, symbol_table *symbols, statement_node *statement) {
+    switch (statement->kind) {
+        case DECLARATION:
+            return bytecodify_declaration(snippet, last_used_reg, symbols, statement->value.declaration);
+            break;
+        case ASSIGNMENT:
+            return bytecodify_assignment(snippet, last_used_reg, symbols, statement->value.assignment);
+            break;
+        default:
+            panic("todo need to implement bytecodify_statement");
     }
+}
+
+void _print_bytecode_symbol_table_callback(string key, uint32_t value, void *userdata) {
+    (void)userdata;
+    cprintf("| The most recent value of the variable \"%S\" is in t%u\n", key, value);
+}
+void print_bytecode_symbol_table(symbol_table *symbols) {
+    hash_table_foreach(symbols->table, _print_bytecode_symbol_table_callback, NULL);
 }

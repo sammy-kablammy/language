@@ -58,8 +58,29 @@ int main(int argc, char **argv) {
     }
 
 
+    // HACK bytecodification eventually needs to be on-demand and out of order, for
+    // now only generate bytecode for main
+    if (first_statement->kind != ASSIGNMENT ||
+            !string_equals(first_statement->value.assignment.lhs, string_from_cstring("main")) ||
+            first_statement->value.assignment.expression->kind != INLINE_FUNCTION)
+    {
+        panic("bytecode currently assumes an assignment to a main function");
+    }
     if (bytecodify_and_exit) {
-        bytecodify_entire_program(first_statement);
+        function_node function = first_statement->value.assignment.expression->value.function_declaration;
+        symbol_table top_level_symbols = symbol_table_alloc();
+        bytecode_snippet snippet = bytecodify_function_declaration(&top_level_symbols, function);
+        cprintf("========== STATEMENT ==========\n");
+        pretty_print_statement(0, first_statement);
+        cprintf("\n");
+        cprintf("========== BYTECODE ==========\n");
+        debug_print_bytecode_snippet(&snippet);
+        cprintf("\n");
+        cprintf("========== BYTECODE SYMBOLS ==========\n");
+        print_bytecode_symbol_table(&top_level_symbols);
+        // TODO free bytecode snippet?
+        // NOTE(sam) Eventually will store bytecode snippets
+        // (but for now only printing)
         return 0;
     }
 
