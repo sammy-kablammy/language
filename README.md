@@ -70,8 +70,10 @@ typechecking phase:
 - [ ] casting, for inspiration see https://www.gingerbill.org/article/2026/02/23/designing-odins-casting-syntax/
 - [ ] error messages
 
+bytecode generation:
+- [X] basic bytecode generation
+
 future
-- bytecode generation
 - bytecode interpreter?? 👀😎
 - optimization
 - machine code output
