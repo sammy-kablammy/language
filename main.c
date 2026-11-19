@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
 
 
     // HACK bytecodification eventually needs to be on-demand and out of order, for
-    // now only generate bytecode for main
+    // now only generate bytecode for one statement, required to be main
     if (first_statement->kind != ASSIGNMENT ||
             !string_equals(first_statement->value.assignment.lhs, string_from_cstring("main")) ||
             first_statement->value.assignment.expression->kind != INLINE_FUNCTION)
@@ -78,9 +78,7 @@ int main(int argc, char **argv) {
         cprintf("\n");
         cprintf("========== BYTECODE SYMBOLS ==========\n");
         print_bytecode_symbol_table(&top_level_symbols);
-        // TODO free bytecode snippet?
-        // NOTE(sam) Eventually will store bytecode snippets
-        // (but for now only printing)
+        // NOTE Eventually will store bytecode snippets (for now only printing)
         return 0;
     }
 
