@@ -57,7 +57,6 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-
     // HACK bytecodification eventually needs to be on-demand and out of order, for
     // now only generate bytecode for one statement, required to be main
     if (first_statement->kind != ASSIGNMENT ||
