@@ -90,9 +90,6 @@ reg bytecodify_infix_expression(bytecode_snippet *snippet, reg last_used_reg, in
         .dest = rhs_result + 1,
     };
 
-    // TODO this currently assumes that every operator is directly mappable to
-    // single instruction. Perhaps an operator (say struct field access)
-    // requires add then load.
     uint64_t kind = INSTRUCTION_INVALID;
     switch (infix.operator.kind) {
         case TOKEN_PLUS:
@@ -175,7 +172,7 @@ reg bytecodify_statement(bytecode_snippet *snippet, reg last_used_reg, symbol_ta
 
 void _print_bytecode_symbol_table_callback(string key, uint32_t value, void *userdata) {
     (void)userdata;
-    cprintf("| The most recent value of the variable \"%S\" is in t%u\n", key, value);
+    cprintf("The most recent value of variable \"%S\" is in t%u\n", key, value);
 }
 void print_bytecode_symbol_table(symbol_table *symbols) {
     hash_table_foreach(symbols->table, _print_bytecode_symbol_table_callback, NULL);
