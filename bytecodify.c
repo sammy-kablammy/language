@@ -76,10 +76,6 @@ reg generate_register(bytecode_state *state) {
     return state->last_used_reg;
 }
 
-// Each bytecodify_* function generates some intermediate registers, and stores
-// the final result in a register. Return the result register so the caller
-// knows where the result is.
-
 void bytecodify_expression(bytecode_state *state, expression_node *expression);
 void bytecodify_statement(bytecode_state *state, statement_node *statement);
 
