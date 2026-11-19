@@ -71,7 +71,9 @@ typechecking phase:
 - [ ] error messages
 
 bytecode generation:
-- [X] basic bytecode generation
+- [X] basic bytecode generation for expressions
+- [ ] support variables
+- [ ] figure out lambdas and whether or not they inherit scope
 
 future
 - bytecode interpreter?? 👀😎
