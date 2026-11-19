@@ -23,6 +23,9 @@ void array_get(array *arr, uint64_t idx, void *out) {
     if (idx > arr->length) {
         panic("Accessing array at position %lu would go out of bounds", idx);
     }
+    if (arr->bytes_per_element == 0) {
+        panic("array_get: you forgot to set bytes_per_element");
+    }
 
     uint8_t *element = (uint8_t *)arr->buf + (idx * arr->bytes_per_element);
     memcpy(out, (void *)element, arr->bytes_per_element);
@@ -30,6 +33,9 @@ void array_get(array *arr, uint64_t idx, void *out) {
 
 // Return the ID/position/whatever of the newly appended element
 uint64_t array_append(array *arr, void *element) {
+    if (arr->bytes_per_element == 0) {
+        panic("array_append: you forgot to set bytes_per_element");
+    }
     if (arr->length + 1 > arr->capacity) {
         arr->capacity = arr->capacity * 2 + 1;
         void *new = xalloc(arr->capacity * arr->bytes_per_element);

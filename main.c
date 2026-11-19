@@ -7,6 +7,7 @@
 #include "pretty_print.c"
 #include "hash_table.c"
 #include "typecheck.c"
+#include "bytecodify.c"
 
 void print_expression(expression_node e);
 void print_leaves(infix_node* node);
@@ -20,6 +21,7 @@ int main(int argc, char **argv) {
     // handle compiler testing arguments (intended for internal use only)
     bool pretty_print_and_exit = false;
     bool typecheck_and_exit = false;
+    bool bytecodify_and_exit = false;
     int arg_idx = 1;
     while (arg_idx < argc - 1) {
         char *arg = argv[arg_idx];
@@ -29,6 +31,8 @@ int main(int argc, char **argv) {
             pretty_print_and_exit = true;
         } else if (cstring_equals_cstring(arg, "--typecheck-and-exit")) {
             typecheck_and_exit = true;
+        } else if (cstring_equals_cstring(arg, "--bytecodify-and-exit")) {
+            bytecodify_and_exit = true;
         }
         arg_idx += 1;
     }
@@ -53,6 +57,29 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    // HACK bytecodification eventually needs to be on-demand and out of order, for
+    // now only generate bytecode for one statement, required to be main
+    if (first_statement->kind != ASSIGNMENT ||
+            !string_equals(first_statement->value.assignment.lhs, string_from_cstring("main")) ||
+            first_statement->value.assignment.expression->kind != INLINE_FUNCTION)
+    {
+        panic("bytecode currently assumes an assignment to a main function");
+    }
+    if (bytecodify_and_exit) {
+        function_node function = first_statement->value.assignment.expression->value.function_declaration;
+        symbol_table top_level_symbols = symbol_table_alloc();
+        bytecode_snippet snippet = bytecodify_function_declaration(&top_level_symbols, function);
+        cprintf("========== STATEMENT ==========\n");
+        pretty_print_statement(0, first_statement);
+        cprintf("\n");
+        cprintf("========== BYTECODE ==========\n");
+        debug_print_bytecode_snippet(&snippet);
+        cprintf("\n");
+        cprintf("========== BYTECODE SYMBOLS ==========\n");
+        print_bytecode_symbol_table(&top_level_symbols);
+        // NOTE Eventually will store bytecode snippets (for now only printing)
+        return 0;
+    }
 
 	return 0;
 }

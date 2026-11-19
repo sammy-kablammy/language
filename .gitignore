@@ -2,3 +2,4 @@ compiler
 
 parser_test_cases/*.got
 typecheck_test_cases/*.got
+bytecode_test_cases/*.got

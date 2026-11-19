@@ -1,0 +1,7 @@
+main = func() {
+    somenum: int = 70
+    somenum = 55 + 22 - 33 * 2
+
+    anothernum: int = 1000
+    anothernum = 1000 + 1
+}
