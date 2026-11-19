@@ -1,6 +1,3 @@
-// Convert top level statement into snippets of a bytecode program, then
-// possibly stitch them together
-
 typedef uint32_t reg;
 const reg REGISTER_INVALID = 0;
 
@@ -25,7 +22,7 @@ typedef struct instruction {
         SUBTRACT_S32,
         MULTIPLY_S32,
         DIVIDE_S32,
-    } kind; // perhaps should be "opcode"
+    } kind;
     union {
         immediate_s32_instr immediate_s32;
         reg_op_reg_instr reg_op_reg;
@@ -70,24 +67,35 @@ void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
+typedef struct {
+    bytecode_snippet *snippet;
+    reg last_used_reg;
+    symbol_table *symbols;
+} bytecode_state;
+
+reg generate_register(bytecode_state *state) {
+    state->last_used_reg += 1;
+    return state->last_used_reg;
+}
 
 // Each bytecodify_* function generates some intermediate registers, and stores
 // the final result in a register. Return the result register so the caller
 // knows where the result is.
 
-reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expression_node *expression);
-reg bytecodify_statement(bytecode_snippet *snippet, reg last_used_reg, symbol_table *symbols, statement_node *statement);
+void bytecodify_expression(bytecode_state *state, expression_node *expression);
+void bytecodify_statement(bytecode_state *state, statement_node *statement);
 
-reg bytecodify_infix_expression(bytecode_snippet *snippet, reg last_used_reg, infix_node infix) {
+void bytecodify_infix_expression(bytecode_state *state, infix_node infix) {
 
-    reg lhs_result = bytecodify_expression(snippet, last_used_reg, infix.left);
-    reg rhs_result = bytecodify_expression(snippet, lhs_result, infix.right);
+    bytecodify_expression(state, infix.left);
+    reg lhs_result = state->last_used_reg;
+    bytecodify_expression(state, infix.right);
+    reg rhs_result = state->last_used_reg;
 
     reg_op_reg_instr instr = {
         .op1 = lhs_result,
         .op2 = rhs_result,
-        .dest = rhs_result + 1,
+        .dest = generate_register(state),
     };
 
     uint64_t kind = INSTRUCTION_INVALID;
@@ -107,63 +115,55 @@ reg bytecodify_infix_expression(bytecode_snippet *snippet, reg last_used_reg, in
         default:
             panic("Unhandled operator (%d) in bytecodify_infix_expression\n", infix.operator.kind);
     }
-    append_instruction(snippet, (instruction){ .kind = kind, .value.reg_op_reg = instr });
+    append_instruction(state->snippet, (instruction){ .kind = kind, .value.reg_op_reg = instr });
 
-    return instr.dest;
 }
 
 bytecode_snippet bytecodify_function_declaration(symbol_table *parent_symbols, function_node function){
     bytecode_snippet snippet = bytecode_snippet_alloc();
-    reg current_reg = REGISTER_INVALID;
+    bytecode_state state = {
+        .snippet = &snippet,
+        .last_used_reg = REGISTER_INVALID,
+        .symbols = parent_symbols,
+    };
 
     statement_node *statement = function.body;
     while (statement != NULL) {
-        current_reg = bytecodify_statement(&snippet, current_reg, parent_symbols, statement);
+        bytecodify_statement(&state, statement);
         statement = statement->next;
     }
 
     return snippet;
 }
 
-reg bytecodify_expression(bytecode_snippet *snippet, reg last_used_reg, expression_node *expression) {
+void bytecodify_expression(bytecode_state *state, expression_node *expression) {
     switch (expression->kind) {
         case INT:
-            append_instruction(snippet, (instruction){
+            append_instruction(state->snippet, (instruction){
                 .kind = IMMEDIATE_S32,
                 .value.immediate_s32 = {
-                    .dest = ++last_used_reg,
+                    .dest = generate_register(state),
                     .the_s32 = expression->value.integer,
                 },
             });
-            return last_used_reg;
+            break;
         case INFIX:
-            return bytecodify_infix_expression(snippet, last_used_reg, expression->value.infix);
+            bytecodify_infix_expression(state, expression->value.infix);
             break;
         default:
             panic("unhandled expression kind=%d in bytecodify_expression", expression->kind);
     }
-
-    return REGISTER_INVALID;
 }
 
-reg bytecodify_assignment(bytecode_snippet *snippet, reg last_used_reg, symbol_table *symbols, assignment_node assignment) {
-    reg rhs = bytecodify_expression(snippet, last_used_reg, assignment.expression);
-    symbol_table_insert(symbols, assignment.lhs, rhs);
-    return rhs;
-}
-reg bytecodify_declaration(bytecode_snippet *snippet, reg last_used_reg, symbol_table *symbols, declaration_node declaration) {
-    reg rhs = bytecodify_expression(snippet, last_used_reg, declaration.expression);
-    symbol_table_insert(symbols, declaration.identifier, rhs);
-    return rhs;
-}
-
-reg bytecodify_statement(bytecode_snippet *snippet, reg last_used_reg, symbol_table *symbols, statement_node *statement) {
+void bytecodify_statement(bytecode_state *state, statement_node *statement) {
     switch (statement->kind) {
         case DECLARATION:
-            return bytecodify_declaration(snippet, last_used_reg, symbols, statement->value.declaration);
+            bytecodify_expression(state, statement->value.declaration.expression);
+            symbol_table_insert(state->symbols, statement->value.declaration.identifier, state->last_used_reg);
             break;
         case ASSIGNMENT:
-            return bytecodify_assignment(snippet, last_used_reg, symbols, statement->value.assignment);
+            bytecodify_expression(state, statement->value.assignment.expression);
+            symbol_table_insert(state->symbols, statement->value.assignment.lhs, state->last_used_reg);
             break;
         default:
             panic("todo need to implement bytecodify_statement");
