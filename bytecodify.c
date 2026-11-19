@@ -1,8 +1,6 @@
 typedef uint32_t reg;
 const reg REGISTER_INVALID = 0;
 
-typedef uint32_t instruction_id;
-
 typedef struct {
     reg dest;
     int32_t the_s32;
@@ -10,8 +8,8 @@ typedef struct {
 
 typedef struct {
     reg dest;
-    reg op1;
-    reg op2;
+    reg reg1;
+    reg reg2;
 } reg_op_reg_instr;
 
 typedef struct instruction {
@@ -50,16 +48,16 @@ void debug_print_bytecode_snippet(bytecode_snippet *snippet) {
                 printf("%ld  |  t%u = %d\n", i, instr.value.immediate_s32.dest, instr.value.immediate_s32.the_s32);
                 break;
             case ADD_S32:
-                printf("%ld  |  t%u = add_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%u = add_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.reg1, instr.value.reg_op_reg.reg2);
                 break;
             case SUBTRACT_S32:
-                printf("%ld  |  t%u = subtract_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%u = subtract_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.reg1, instr.value.reg_op_reg.reg2);
                 break;
             case MULTIPLY_S32:
-                printf("%ld  |  t%u = multiply_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%u = multiply_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.reg1, instr.value.reg_op_reg.reg2);
                 break;
             case DIVIDE_S32:
-                printf("%ld  |  t%u = divide_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.op1, instr.value.reg_op_reg.op2);
+                printf("%ld  |  t%u = divide_s32 t%u t%u\n", i, instr.value.reg_op_reg.dest, instr.value.reg_op_reg.reg1, instr.value.reg_op_reg.reg2);
                 break;
             case INSTRUCTION_INVALID:
                 panic("you forgot to initialize an instruction kind somewhere");
@@ -93,8 +91,8 @@ void bytecodify_infix_expression(bytecode_state *state, infix_node infix) {
     reg rhs_result = state->last_used_reg;
 
     reg_op_reg_instr instr = {
-        .op1 = lhs_result,
-        .op2 = rhs_result,
+        .reg1 = lhs_result,
+        .reg2 = rhs_result,
         .dest = generate_register(state),
     };
 
