@@ -88,7 +88,9 @@ typedef struct conditional_node {
     statement_node *body;
     statement_node *alt_body; // not guaranteed to be non-null
 } conditional_node;
+
 typedef struct function_node {
+    string
     statement_node *body;
 } function_node;
 
@@ -122,7 +124,7 @@ struct expression_node {
         INT,
         IDENTIFIER,
         BOOL,
-        INLINE_FUNCTION,
+        FUNCTION,
     } kind;
 
     union {
@@ -365,6 +367,50 @@ expression_node *parse_expression(parser_state* state, int prev_prec) {
     return left;
 }
 
+string* parse_arguments(parser_state* state) {
+    // arguments should be in the format:
+    // identifier colon type comma
+    
+    string* args = /* figure out what to put here*/;
+    while (state->current_token.kind != TOKEN_RPAREN) {
+        // expect identifier
+        if (state->current_token.kind != TOKEN_IDENTIFIER) {
+            parser_error(state, "Expected identifier in function argument, got %T", state->current_token);
+        }
+        parser_advance(state);
+        // expect colon
+        if (state->current_token.kind != TOKEN_COLON) {
+            parser_error(state, "Expected colon in function argument, got %T", state->current_token);
+        }
+        parser_advance(state);
+        // expect type
+        type_info type = // get type from the token here
+        // if the type we found is not recognized as any type in general, fail here
+        // otherwise proceed
+        parser_advance(state);
+        // expect comma
+        if (state->current_token.kind != TOKEN_COMMA) {
+            parser_error(state, "Expected comma in function argument, got %T", state->current_token);
+        }
+        // if we have more function arguments, we should expect a comma, if not, expect a RPAREN
+        if (state->current_token.kind == TOKEN_COMMA) {
+            parser_advance(state);
+        }
+        else if (state->current_token.kind == TOKEN_RPAREN) {
+            // return the list of arguments
+            return args;
+        }
+        else {
+            // potentially do some more information gathering to further specify what kind of debug
+            // specifically to give them, e.g. if they have an identifier next, they probably
+            // missed a comma before putting their next argument
+            parser_error(state, "Expected either comma or closing parenthesis to function, got %T instead", state->current_token);
+        }
+    }
+    // theoretically this doesn't get reached ever, but return all args just in case
+    return args;
+}
+
 expression_node *parse_leaf(parser_state* state) {
 	expression_node *leaf = xalloc(sizeof(expression_node));
 	if (state->current_token.kind == TOKEN_INTEGER) {
@@ -384,7 +430,7 @@ expression_node *parse_leaf(parser_state* state) {
 		leaf->value.bool = false;
 	}
     else if (state->current_token.kind == TOKEN_FUNCTION) {
-        leaf->kind = INLINE_FUNCTION;
+        leaf->kind = FUNCTION;
         parser_advance(state);
         // expect left parenthesis
         if (state->current_token.kind != TOKEN_LPAREN) {
@@ -392,6 +438,7 @@ expression_node *parse_leaf(parser_state* state) {
         }
         parser_advance(state);
         // expect arguments here
+        string* args = parse_arguments(state);
         // expect right parenthesis
         if (state->current_token.kind != TOKEN_RPAREN) {
             parser_error(state, "Expected ')' after function arguments");

@@ -11,6 +11,7 @@ typedef struct token {
         TOKEN_STAR = '*',
         TOKEN_SLASH = '/',
         TOKEN_COLON = ':',
+        TOKEN_COMMA = ',',
         TOKEN_DOT = '.',
         TOKEN_LESS_THAN = '<',
         TOKEN_GREATER_THAN = '>',
