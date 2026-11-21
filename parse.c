@@ -36,6 +36,7 @@ __attribute__((noreturn)) void parser_error(parser_state *state, const char *err
     buf += compiler_sprintf(buf, "^%s", ANSI_RESET);
     buf += compiler_sprintf(buf, "\n");
 
+    buf += compiler_sprintf(buf, "\0");
     compiler_fprintf(stderr, "%s", error_buffer);
     va_end(args);
     exit(PARSE_ERROR);
