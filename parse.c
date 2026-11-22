@@ -481,3 +481,12 @@ bool is_operator(token t) {
 			return false;
 	}
 }
+
+bool is_boolean_operator(token tok) {
+    return tok.kind == TOKEN_EQUAL_TO ||
+        tok.kind == TOKEN_NOT_EQUAL_TO ||
+        tok.kind == TOKEN_LESS_THAN ||
+        tok.kind == TOKEN_LESS_THAN_OR_EQUAL_TO ||
+        tok.kind == TOKEN_GREATER_THAN ||
+        tok.kind == TOKEN_GREATER_THAN_OR_EQUAL_TO;
+}
