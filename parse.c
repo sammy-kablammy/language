@@ -464,8 +464,7 @@ bool is_operator(token t) {
 		case TOKEN_MINUS: // fall through
 		case TOKEN_STAR: // fall through
 		case TOKEN_SLASH: // fall through
-		case TOKEN_DOT:
-			return true;
+		case TOKEN_DOT: // fall through
 		case TOKEN_LESS_THAN: // fall through
 		case TOKEN_LESS_THAN_OR_EQUAL_TO: // fall through
 		case TOKEN_GREATER_THAN: // fall through
@@ -473,7 +472,28 @@ bool is_operator(token t) {
 		case TOKEN_EQUAL_TO: // fall through
 		case TOKEN_NOT_EQUAL_TO:
             return true;
-		default:
+		case TOKEN_ASSIGN: // fall through
+		case TOKEN_COLON: // fall through
+		case TOKEN_END_OF_LINE: // fall through
+		case TOKEN_IDENTIFIER: // fall through
+		case TOKEN_INTEGER: // fall through
+		case TOKEN_RETURN: // fall through
+		case TOKEN_TRUE: // fall through
+		case TOKEN_FALSE: // fall through
+		case TOKEN_WHILE: // fall through
+		case TOKEN_IF: // fall through
+		case TOKEN_ELSE: // fall through
+		case TOKEN_FUNCTION: // fall through
+		case TOKEN_BREAK: // fall through
+		case TOKEN_CONTINUE: // fall through
+		case TOKEN_LPAREN: // fall through (for now)
+		case TOKEN_RPAREN: // fall through
+		case TOKEN_LBRACE: // fall through
+		case TOKEN_RBRACE:
 			return false;
+        case TOKEN_INVALID:
+            panic("attempted to check whether TOKEN_INVALID is an operator");
+            return false;
 	}
+    panic("is_operator: token kind %u is not handled by enum", t.kind);
 }
