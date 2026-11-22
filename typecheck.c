@@ -113,7 +113,6 @@ type_info_id typecheck_expression(typecheck_state *state, expression_node *expre
 void typecheck_statement(typecheck_state *state, statement_node *statement);
 void print_symbol_table(typecheck_state *state, const char *name);
 
-// TODO: ensure operator matches types. for example '123 * true' should cause a type error
 type_info_id typecheck_infix_expression(typecheck_state *state, infix_node infix) {
     type_info_id lhs_type_id = typecheck_expression(state, infix.left);
     type_info_id rhs_type_id = typecheck_expression(state, infix.right);
