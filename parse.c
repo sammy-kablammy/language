@@ -175,22 +175,22 @@ int operator_prec(token t) {
 // (This looks kinda like parse_entire_file, but the conditions are different)
 statement_node *parse_block(parser_state *state) {
     if (state->current_token.kind != TOKEN_LBRACE) {
-        parser_error(state, "Expected '{' at beginning of block, got %T", state->current_token);
+        parser_error(state, "Expected '{' at start of block, got %T", state->current_token);
     }
     parser_advance(state);
-
-    parser_eat_newlines(state);
+    if (state->current_token.kind != TOKEN_END_OF_LINE) {
+        parser_error(state, "Expected end of line at start of block, got %T", state->current_token);
+    }
+    parser_advance(state);
 
     statement_node *first_statement = NULL;
 	if (state->current_token.kind != TOKEN_RBRACE) {
 		first_statement = parse_statement(state);
-        parser_eat_newlines(state);
     }
 
     statement_node *current_statement = first_statement;
 	while (state->current_token.kind != TOKEN_RBRACE) {
         current_statement->next = parse_statement(state);
-        parser_eat_newlines(state);
         current_statement = current_statement->next;
 	}
     parser_advance(state);
@@ -207,7 +207,9 @@ statement_node* parse_entire_file(token_array *tokens, char *file_name, string f
         .file_contents = file_contents,
     };
 
-    parser_eat_newlines(&state);
+    if (state.current_token.kind == TOKEN_END_OF_LINE) {
+        parser_advance(&state);
+    }
 
     statement_node *first_statement = NULL;
 	if (state.pos < state.tokens->length) {
@@ -298,7 +300,9 @@ statement_node *parse_statement(parser_state *state) {
             if (state->current_token.kind != TOKEN_END_OF_LINE && state->current_token.kind != TOKEN_ELSE) {
                 parser_error(state, "Expected new line or else before next statement");
             }
-            parser_eat_newlines(state);
+            if (state->current_token.kind == TOKEN_END_OF_LINE) {
+                parser_advance(state);
+            }
             // capture any potential elses since they shouldnt count as their own statement
             if (state->current_token.kind == TOKEN_ELSE) {
                 parser_advance(state);
@@ -314,7 +318,9 @@ statement_node *parse_statement(parser_state *state) {
                     parser_error(state, "Unexpected syntax after else keyword: '%T'", state->current_token);
                 }
             }
-            parser_eat_newlines(state);
+            if (state->current_token.kind == TOKEN_END_OF_LINE) {
+                parser_advance(state);
+            }
             return stmt;
         case TOKEN_ELSE:
             parser_error(state, "Unrecognized syntax: else statement with no preceding if statement.");
@@ -322,9 +328,9 @@ statement_node *parse_statement(parser_state *state) {
             parser_error(state, "Expected statement, got %T", state->current_token);
     }
     if (state->current_token.kind != TOKEN_END_OF_LINE) {
-        parser_error(state, "Unexpected token %T after end of statement", state->current_token);
+        parser_error(state, "Expected end of line after end of statement, got %T", state->current_token);
     }
-    parser_eat_newlines(state);
+    parser_advance(state);
     return stmt;
 }
 
@@ -405,6 +411,7 @@ int sprint_token(char *buf, token t) {
         case TOKEN_DOT: // fall through
 		case TOKEN_LESS_THAN: // fall through
 		case TOKEN_GREATER_THAN: // fall through
+		case TOKEN_COLON: // fall through
         case TOKEN_LPAREN: // fall through
         case TOKEN_RPAREN: // fall through
 		case TOKEN_LBRACE: // fall through
@@ -435,8 +442,18 @@ int sprint_token(char *buf, token t) {
             return sprintf(buf, "if");
         case TOKEN_ELSE:
             return sprintf(buf, "else");
-		default:
-			panic("print_token: unknown token kind=%d", t.kind);
+        case TOKEN_TRUE:
+            return sprintf(buf, "true");
+        case TOKEN_FALSE:
+            return sprintf(buf, "false");
+        case TOKEN_WHILE:
+            return sprintf(buf, "while");
+        case TOKEN_BREAK:
+            return sprintf(buf, "break");
+        case TOKEN_CONTINUE:
+            return sprintf(buf, "continue");
+        case TOKEN_INVALID:
+            panic("(attempted to print invalid token, this shouldn't happen)");
 	}
     return written;
 }
