@@ -174,6 +174,11 @@ int operator_prec(token t) {
 
 // (This looks kinda like parse_entire_file, but the conditions are different)
 statement_node *parse_block(parser_state *state) {
+    if (state->current_token.kind != TOKEN_LBRACE) {
+        parser_error(state, "Expected '{' at beginning of block, got %T", state->current_token);
+    }
+    parser_advance(state);
+
     parser_eat_newlines(state);
 
     statement_node *first_statement = NULL;
@@ -188,6 +193,7 @@ statement_node *parse_block(parser_state *state) {
         parser_eat_newlines(state);
         current_statement = current_statement->next;
 	}
+    parser_advance(state);
 
     return first_statement;
 }
@@ -282,29 +288,13 @@ statement_node *parse_statement(parser_state *state) {
             stmt->kind = WHILE_LOOP;
             parser_advance(state);
             stmt->value.while_loop.condition = parse_expression(state, MIN_PREC);
-            if (state->current_token.kind != TOKEN_LBRACE) {
-                parser_error(state, "Expected '{' after while-loop condition");
-            }
-            parser_advance(state);
             stmt->value.while_loop.body = parse_block(state);
-            if (state->current_token.kind != TOKEN_RBRACE) {
-                parser_error(state, "Expected '}' after while-loop body");
-            }
-            parser_advance(state);
             break;
 		case TOKEN_IF:
             stmt->kind = CONDITIONAL;
             parser_advance(state);
 			stmt->value.conditional.condition = parse_expression(state, MIN_PREC);
-            if (state->current_token.kind != TOKEN_LBRACE) {
-                parser_error(state, "Expected '{' after if-statement condition", state->current_token);
-            }
-            parser_advance(state);
 			stmt->value.conditional.body = parse_block(state);
-            if (state->current_token.kind != TOKEN_RBRACE) {
-                parser_error(state, "Expected '}' after if-statement body", state->current_token);
-            }
-            parser_advance(state);
             if (state->current_token.kind != TOKEN_END_OF_LINE && state->current_token.kind != TOKEN_ELSE) {
                 parser_error(state, "Expected new line or else before next statement");
             }
@@ -314,12 +304,7 @@ statement_node *parse_statement(parser_state *state) {
                 parser_advance(state);
                 // else {
                 if (state->current_token.kind == TOKEN_LBRACE) {
-                    parser_advance(state);
                     stmt->value.conditional.alt_body = parse_block(state);
-                    if (state->current_token.kind != TOKEN_RBRACE) {
-                        parser_error(state, "Expected '}' after else body", state->current_token);
-                    }
-                    parser_advance(state);
                 }
                 // else if
                 else if (state->current_token.kind == TOKEN_IF) {
@@ -370,18 +355,22 @@ expression_node *parse_leaf(parser_state* state) {
 	if (state->current_token.kind == TOKEN_INTEGER) {
 		leaf->kind = INT;
 		leaf->value.integer = state->current_token.value.integer;
+        parser_advance(state);
 	}
 	else if (state->current_token.kind == TOKEN_IDENTIFIER) {
 		leaf->kind = IDENTIFIER;
 		leaf->value.identifier = state->current_token.value.identifier;
+        parser_advance(state);
 	}
 	else if (state->current_token.kind == TOKEN_TRUE) {
 		leaf->kind = BOOL;
 		leaf->value.bool = true;
+        parser_advance(state);
 	}
 	else if (state->current_token.kind == TOKEN_FALSE) {
 		leaf->kind = BOOL;
 		leaf->value.bool = false;
+        parser_advance(state);
 	}
     else if (state->current_token.kind == TOKEN_FUNCTION) {
         leaf->kind = INLINE_FUNCTION;
@@ -397,21 +386,11 @@ expression_node *parse_leaf(parser_state* state) {
             parser_error(state, "Expected ')' after function arguments");
         }
         parser_advance(state);
-        // expect left brace
-        if (state->current_token.kind != TOKEN_LBRACE) {
-            parser_error(state, "Expected '{' after function declaration");
-        }
-        parser_advance(state);
-        // expect block of code
         leaf->value.function_declaration.body = parse_block(state);
-        if (state->current_token.kind != TOKEN_RBRACE) {
-            parser_error(state, "Expected '}' after function body");
-        }
     }
 	else {
         parser_error(state, "Expected expression, got %T", state->current_token);
 	}
-    parser_advance(state);
 	return leaf;
 }
 
