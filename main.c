@@ -29,6 +29,9 @@ int main(int argc, char **argv) {
             pretty_print_and_exit = true;
         } else if (cstring_equals_cstring(arg, "--typecheck-and-exit")) {
             typecheck_and_exit = true;
+        } else {
+            compiler_fprintf(stderr, "Unrecognized argument '%s'", argv[arg_idx]);
+            exit(GENERIC_COMPILER_ERROR);
         }
         arg_idx += 1;
     }

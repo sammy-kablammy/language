@@ -86,5 +86,3 @@ future
     the compiler_printf family. generally go through and remove all printfs,
     fprintfs, sprintfs in the main body of the compiler with cprintfs
 - go through and find TODOs; they're not all described here
-
-- compiler main() should reject invalid arguments (try `--typecheck-and-exi`)
