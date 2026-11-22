@@ -255,7 +255,6 @@ void typecheck_assignment(typecheck_state *state, assignment_node assignment) {
 }
 
 void typecheck_while_loop(typecheck_state *state, while_loop_node while_loop) {
-    print_symbol_table(state, "sup");
     type_info_id id = typecheck_expression(state, while_loop.condition);
     type_info_id bool_id = 0;
     symbol_table_lookup(state, string_from_cstring("bool"), &bool_id);
