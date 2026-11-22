@@ -31,6 +31,8 @@ typedef struct {
     struct symbol_table *symbols;
     array *type_infos;
     bool print_symbols_when_exiting_scope; // (only used for testing)
+    // some primitive type_infos, duplicated here for convenience:
+    type_info_id bool_id;
 } typecheck_state;
 
 type_info_id type_info_alloc(typecheck_state *state, type_info info) {
@@ -121,6 +123,11 @@ type_info_id typecheck_infix_expression(typecheck_state *state, infix_node infix
     if (!are_types_compatible(state, lhs_type_id, rhs_type_id)) {
         panic("type error: infix expression lhs type (%d) doesn't match rhs type (%d)", lhs_type.kind, rhs_type.kind);
     }
+
+    if (is_boolean_operator(infix.operator)) {
+        return state->bool_id;
+    }
+    // fall back on lhs type. type of "a op b" is the same as type of "a"
     return lhs_type_id;
 }
 
@@ -248,6 +255,23 @@ void typecheck_assignment(typecheck_state *state, assignment_node assignment) {
 
 }
 
+void typecheck_while_loop(typecheck_state *state, while_loop_node while_loop) {
+    print_symbol_table(state, "sup");
+    type_info_id id = typecheck_expression(state, while_loop.condition);
+    type_info_id bool_id = 0;
+    symbol_table_lookup(state, string_from_cstring("bool"), &bool_id);
+    type_info bool_info = type_info_from_id(state, bool_id);
+    assert(bool_info.kind == TYPE_TYPE);
+    bool_id = bool_info.value.underlying_type;
+    if (!are_types_compatible(state, id, bool_id)) {
+        // TODO needs the other pr for type_error
+        // type_error()
+        panic("type error: Loop condition must be a bool");
+    }
+
+    typecheck_scope(state, while_loop.body);
+}
+
 void typecheck_statement(typecheck_state *state, statement_node *statement) {
     switch (statement->kind) {
         case DECLARATION:
@@ -260,6 +284,13 @@ void typecheck_statement(typecheck_state *state, statement_node *statement) {
             // TODO need a way to pass current function's type_info to typecheck_return
             // panic("returns are not yet typechecked");
             break;
+        case WHILE_LOOP:
+            typecheck_while_loop(state, statement->value.while_loop);
+            break;
+        case BREAK:
+            break; // no typechecking needed
+        case CONTINUE:
+            break; // no typechecking needed
         default:
             panic("typecheck_statement: unhandled statement kind (%d)", statement->kind);
     }
@@ -282,6 +313,7 @@ void typecheck_top_level_statement(statement_node *statement, bool debug_print_s
     // Each type gets a primitive type, and a "type" so it is accessible by name
     const type_info_id int_id = type_info_alloc(&state, (type_info) { .kind = TYPE_PRIMITIVE });
     const type_info_id bool_id = type_info_alloc(&state, (type_info) { .kind = TYPE_PRIMITIVE });
+    state.bool_id = bool_id;
     const type_info_id int_type = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = int_id });
     const type_info_id bool_type = type_info_alloc(&state, (type_info) { .kind = TYPE_TYPE, .value.underlying_type = bool_id });
 
