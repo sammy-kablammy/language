@@ -1,5 +1,9 @@
 
-// should handle newlines in many places, including the beginning of a file
+
+// (the purpose of this test case is to have the END_OF_LINE token appear in lots
+// of places around a file)
+
+
 
 main = func() {
     // newlines at beginning of a block
