@@ -5,4 +5,7 @@ diff_func = func() {
     anothervar = var + 5
     return anothervar
 }
-result = diff_func
+another_func = func(myparam : string) {
+}
+last_func = func(paramone : int, paramtwo : bool, paramthree : string) {
+}

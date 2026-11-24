@@ -178,7 +178,7 @@ type_info_id typecheck_expression(typecheck_state *state, expression_node *expre
             break;
         case INFIX:
             return typecheck_infix_expression(state, expression->value.infix);
-        case INLINE_FUNCTION:
+        case FUNCTION_DECLARATION:
             return typecheck_function_declaration(state, expression->value.function_declaration);
         default:
             panic("unhandled expression kind in typecheck_expression (%d)", expression->kind);
