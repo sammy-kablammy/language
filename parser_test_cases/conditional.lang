@@ -15,6 +15,12 @@ if x < y {
             return other_stuff
         }
     }
+    // can squish '}' and else on the same line
+    if condition {
+        return this
+    } else {
+        return that
+    }
 }
 
 

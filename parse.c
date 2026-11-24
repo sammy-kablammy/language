@@ -174,20 +174,26 @@ int operator_prec(token t) {
 
 // (This looks kinda like parse_entire_file, but the conditions are different)
 statement_node *parse_block(parser_state *state) {
-    parser_eat_newlines(state);
+    if (state->current_token.kind != TOKEN_LBRACE) {
+        parser_error(state, "Expected '{' at start of block, got %T", state->current_token);
+    }
+    parser_advance(state);
+    if (state->current_token.kind != TOKEN_END_OF_LINE) {
+        parser_error(state, "Expected end of line at start of block, got %T", state->current_token);
+    }
+    parser_advance(state);
 
     statement_node *first_statement = NULL;
 	if (state->current_token.kind != TOKEN_RBRACE) {
 		first_statement = parse_statement(state);
-        parser_eat_newlines(state);
     }
 
     statement_node *current_statement = first_statement;
 	while (state->current_token.kind != TOKEN_RBRACE) {
         current_statement->next = parse_statement(state);
-        parser_eat_newlines(state);
         current_statement = current_statement->next;
 	}
+    parser_advance(state);
 
     return first_statement;
 }
@@ -201,7 +207,9 @@ statement_node* parse_entire_file(token_array *tokens, char *file_name, string f
         .file_contents = file_contents,
     };
 
-    parser_eat_newlines(&state);
+    if (state.current_token.kind == TOKEN_END_OF_LINE) {
+        parser_advance(&state);
+    }
 
     statement_node *first_statement = NULL;
 	if (state.pos < state.tokens->length) {
@@ -282,44 +290,25 @@ statement_node *parse_statement(parser_state *state) {
             stmt->kind = WHILE_LOOP;
             parser_advance(state);
             stmt->value.while_loop.condition = parse_expression(state, MIN_PREC);
-            if (state->current_token.kind != TOKEN_LBRACE) {
-                parser_error(state, "Expected '{' after while-loop condition");
-            }
-            parser_advance(state);
             stmt->value.while_loop.body = parse_block(state);
-            if (state->current_token.kind != TOKEN_RBRACE) {
-                parser_error(state, "Expected '}' after while-loop body");
-            }
-            parser_advance(state);
             break;
 		case TOKEN_IF:
             stmt->kind = CONDITIONAL;
             parser_advance(state);
 			stmt->value.conditional.condition = parse_expression(state, MIN_PREC);
-            if (state->current_token.kind != TOKEN_LBRACE) {
-                parser_error(state, "Expected '{' after if-statement condition", state->current_token);
-            }
-            parser_advance(state);
 			stmt->value.conditional.body = parse_block(state);
-            if (state->current_token.kind != TOKEN_RBRACE) {
-                parser_error(state, "Expected '}' after if-statement body", state->current_token);
-            }
-            parser_advance(state);
             if (state->current_token.kind != TOKEN_END_OF_LINE && state->current_token.kind != TOKEN_ELSE) {
                 parser_error(state, "Expected new line or else before next statement");
             }
-            parser_eat_newlines(state);
+            if (state->current_token.kind == TOKEN_END_OF_LINE) {
+                parser_advance(state);
+            }
             // capture any potential elses since they shouldnt count as their own statement
             if (state->current_token.kind == TOKEN_ELSE) {
                 parser_advance(state);
                 // else {
                 if (state->current_token.kind == TOKEN_LBRACE) {
-                    parser_advance(state);
                     stmt->value.conditional.alt_body = parse_block(state);
-                    if (state->current_token.kind != TOKEN_RBRACE) {
-                        parser_error(state, "Expected '}' after else body", state->current_token);
-                    }
-                    parser_advance(state);
                 }
                 // else if
                 else if (state->current_token.kind == TOKEN_IF) {
@@ -329,7 +318,9 @@ statement_node *parse_statement(parser_state *state) {
                     parser_error(state, "Unexpected syntax after else keyword: '%T'", state->current_token);
                 }
             }
-            parser_eat_newlines(state);
+            if (state->current_token.kind == TOKEN_END_OF_LINE) {
+                parser_advance(state);
+            }
             return stmt;
         case TOKEN_ELSE:
             parser_error(state, "Unrecognized syntax: else statement with no preceding if statement.");
@@ -337,9 +328,9 @@ statement_node *parse_statement(parser_state *state) {
             parser_error(state, "Expected statement, got %T", state->current_token);
     }
     if (state->current_token.kind != TOKEN_END_OF_LINE) {
-        parser_error(state, "Unexpected token %T after end of statement", state->current_token);
+        parser_error(state, "Expected end of line after end of statement, got %T", state->current_token);
     }
-    parser_eat_newlines(state);
+    parser_advance(state);
     return stmt;
 }
 
@@ -370,18 +361,22 @@ expression_node *parse_leaf(parser_state* state) {
 	if (state->current_token.kind == TOKEN_INTEGER) {
 		leaf->kind = INT;
 		leaf->value.integer = state->current_token.value.integer;
+        parser_advance(state);
 	}
 	else if (state->current_token.kind == TOKEN_IDENTIFIER) {
 		leaf->kind = IDENTIFIER;
 		leaf->value.identifier = state->current_token.value.identifier;
+        parser_advance(state);
 	}
 	else if (state->current_token.kind == TOKEN_TRUE) {
 		leaf->kind = BOOL;
 		leaf->value.bool = true;
+        parser_advance(state);
 	}
 	else if (state->current_token.kind == TOKEN_FALSE) {
 		leaf->kind = BOOL;
 		leaf->value.bool = false;
+        parser_advance(state);
 	}
     else if (state->current_token.kind == TOKEN_FUNCTION) {
         leaf->kind = INLINE_FUNCTION;
@@ -397,21 +392,11 @@ expression_node *parse_leaf(parser_state* state) {
             parser_error(state, "Expected ')' after function arguments");
         }
         parser_advance(state);
-        // expect left brace
-        if (state->current_token.kind != TOKEN_LBRACE) {
-            parser_error(state, "Expected '{' after function declaration");
-        }
-        parser_advance(state);
-        // expect block of code
         leaf->value.function_declaration.body = parse_block(state);
-        if (state->current_token.kind != TOKEN_RBRACE) {
-            parser_error(state, "Expected '}' after function body");
-        }
     }
 	else {
         parser_error(state, "Expected expression, got %T", state->current_token);
 	}
-    parser_advance(state);
 	return leaf;
 }
 
@@ -426,6 +411,7 @@ int sprint_token(char *buf, token t) {
         case TOKEN_DOT: // fall through
 		case TOKEN_LESS_THAN: // fall through
 		case TOKEN_GREATER_THAN: // fall through
+		case TOKEN_COLON: // fall through
         case TOKEN_LPAREN: // fall through
         case TOKEN_RPAREN: // fall through
 		case TOKEN_LBRACE: // fall through
@@ -456,8 +442,18 @@ int sprint_token(char *buf, token t) {
             return sprintf(buf, "if");
         case TOKEN_ELSE:
             return sprintf(buf, "else");
-		default:
-			panic("print_token: unknown token kind=%d", t.kind);
+        case TOKEN_TRUE:
+            return sprintf(buf, "true");
+        case TOKEN_FALSE:
+            return sprintf(buf, "false");
+        case TOKEN_WHILE:
+            return sprintf(buf, "while");
+        case TOKEN_BREAK:
+            return sprintf(buf, "break");
+        case TOKEN_CONTINUE:
+            return sprintf(buf, "continue");
+        case TOKEN_INVALID:
+            panic("(attempted to print invalid token, this shouldn't happen)");
 	}
     return written;
 }
@@ -468,8 +464,7 @@ bool is_operator(token t) {
 		case TOKEN_MINUS: // fall through
 		case TOKEN_STAR: // fall through
 		case TOKEN_SLASH: // fall through
-		case TOKEN_DOT:
-			return true;
+		case TOKEN_DOT: // fall through
 		case TOKEN_LESS_THAN: // fall through
 		case TOKEN_LESS_THAN_OR_EQUAL_TO: // fall through
 		case TOKEN_GREATER_THAN: // fall through
@@ -477,7 +472,28 @@ bool is_operator(token t) {
 		case TOKEN_EQUAL_TO: // fall through
 		case TOKEN_NOT_EQUAL_TO:
             return true;
-		default:
+		case TOKEN_ASSIGN: // fall through
+		case TOKEN_COLON: // fall through
+		case TOKEN_END_OF_LINE: // fall through
+		case TOKEN_IDENTIFIER: // fall through
+		case TOKEN_INTEGER: // fall through
+		case TOKEN_RETURN: // fall through
+		case TOKEN_TRUE: // fall through
+		case TOKEN_FALSE: // fall through
+		case TOKEN_WHILE: // fall through
+		case TOKEN_IF: // fall through
+		case TOKEN_ELSE: // fall through
+		case TOKEN_FUNCTION: // fall through
+		case TOKEN_BREAK: // fall through
+		case TOKEN_CONTINUE: // fall through
+		case TOKEN_LPAREN: // fall through (for now)
+		case TOKEN_RPAREN: // fall through
+		case TOKEN_LBRACE: // fall through
+		case TOKEN_RBRACE:
 			return false;
+        case TOKEN_INVALID:
+            panic("attempted to check whether TOKEN_INVALID is an operator");
+            return false;
 	}
+    panic("is_operator: token kind %u is not handled by enum", t.kind);
 }

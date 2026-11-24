@@ -1,0 +1,13 @@
+main = func() {
+    if condition {
+        x: int = 100
+        x = x + 1
+        x = x + 2
+        x = x + 3
+        x = x + 4
+    }
+}
+after: single = line + comment
+foo: bar = baz
+thing: a = mabob
+file = will - end - now

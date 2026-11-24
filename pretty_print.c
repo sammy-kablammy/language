@@ -20,7 +20,7 @@ void pretty_print_expression(uint32_t num_spaces, expression_node *expression) {
             printf("%d", expression->value.integer);
             break;
         case IDENTIFIER:
-            print_string(expression->value.identifier);
+            compiler_printf("%S", expression->value.identifier);
             break;
         case BOOL:
             if (expression->value.bool == true) {
@@ -33,11 +33,10 @@ void pretty_print_expression(uint32_t num_spaces, expression_node *expression) {
             break;
         case INLINE_FUNCTION:
             printf("func(");
-            // print arguments here
+            // TODO print arguments here
             printf(") ");
-            // print return type here
+            // TODO print return type here
             printf("{\n");
-            // print function body here
             pretty_print_block(num_spaces + INDENT_AMOUNT, expression->value.function_declaration.body);
             printf("}");
             break;
@@ -57,15 +56,15 @@ void pretty_print_statement(uint32_t num_spaces, statement_node *statement) {
     print_spaces(num_spaces);
     switch (statement->kind) {
         case DECLARATION:
-            print_string(statement->value.declaration.identifier);
-            printf(": ");
-            print_string(statement->value.declaration.data_type);
-            printf(" = ");
+            compiler_printf(
+                "%S: %S = ",
+                statement->value.declaration.identifier,
+                statement->value.declaration.data_type
+            );
             pretty_print_expression(num_spaces, statement->value.declaration.expression);
             break;
         case ASSIGNMENT:
-            print_string(statement->value.assignment.lhs);
-            printf(" = ");
+            compiler_printf("%S = ", statement->value.assignment.lhs);
             pretty_print_expression(num_spaces, statement->value.assignment.expression);
             break;
         case RETURN:

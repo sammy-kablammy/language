@@ -28,12 +28,6 @@ uint64_t sprint_string(char *buf, string str) {
     return i;
 }
 
-void print_string(string str) {
-    for (uint64_t i = 0; i < str.length; i++) {
-        printf("%c", str.buf[i]);
-    }
-}
-
 bool cstring_equals_cstring(char *s1, char *s2) {
     // whatever
     return strcmp(s1, s2) == 0;

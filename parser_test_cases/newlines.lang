@@ -1,0 +1,56 @@
+
+
+// (the purpose of this test case is to have the END_OF_LINE token appear in lots
+// of places around a file)
+
+
+
+main = func() {
+    // newlines at beginning of a block
+    if condition {
+
+
+        x: int = 100 // between statements within a block
+        x = x + 1
+
+        x = x + 2
+
+
+        x = x + 3
+
+        // newlines at end of a block
+        x = x + 4
+
+
+    }
+    // (after a block)
+
+
+
+}
+
+
+// statements can follow single-line-comments
+after: single = line + comment
+// repeated newlines after a single-line comment
+
+
+
+
+/*
+Stuff after a multi-line comment
+*/
+foo: bar = baz
+
+/*
+Repeated newlines after a multi-line comment
+*/
+
+
+
+thing: a = mabob
+// end of a file
+file = will - end - now
+
+
+

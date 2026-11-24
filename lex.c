@@ -1,41 +1,42 @@
+typedef enum token_kind {
+    // This is never set, but it's convenient while debugging to have the
+    // zero value represent something:
+    TOKEN_INVALID = 0,
+    // For single-character tokens, just use their ascii value (that way
+    // they can be printed directly):
+    TOKEN_ASSIGN = '=',
+    TOKEN_PLUS = '+',
+    TOKEN_MINUS = '-',
+    TOKEN_STAR = '*',
+    TOKEN_SLASH = '/',
+    TOKEN_COLON = ':',
+    TOKEN_DOT = '.',
+    TOKEN_LESS_THAN = '<',
+    TOKEN_GREATER_THAN = '>',
+    TOKEN_LPAREN = '(',
+    TOKEN_RPAREN = ')',
+    TOKEN_LBRACE = '{',
+    TOKEN_RBRACE = '}',
+    TOKEN_END_OF_LINE = '\n',
+    // multicharacter or non-ascii tokens start above the ascii range:
+    TOKEN_IDENTIFIER = 128,
+    TOKEN_INTEGER,
+    TOKEN_RETURN,
+    TOKEN_TRUE,
+    TOKEN_FALSE,
+    TOKEN_LESS_THAN_OR_EQUAL_TO,
+    TOKEN_GREATER_THAN_OR_EQUAL_TO,
+    TOKEN_EQUAL_TO,
+    TOKEN_NOT_EQUAL_TO,
+    TOKEN_WHILE,
+    TOKEN_IF,
+    TOKEN_ELSE,
+    TOKEN_FUNCTION,
+    TOKEN_BREAK,
+    TOKEN_CONTINUE,
+} token_kind;
 typedef struct token {
-    enum {
-        // This is never set, but it's convenient while debugging to have the
-        // zero value represent something:
-        TOKEN_INVALID = 0,
-        // For single-character tokens, just use their ascii value (that way
-        // they can be printed directly):
-        TOKEN_ASSIGN = '=',
-        TOKEN_PLUS = '+',
-        TOKEN_MINUS = '-',
-        TOKEN_STAR = '*',
-        TOKEN_SLASH = '/',
-        TOKEN_COLON = ':',
-        TOKEN_DOT = '.',
-        TOKEN_LESS_THAN = '<',
-        TOKEN_GREATER_THAN = '>',
-        TOKEN_LPAREN = '(',
-        TOKEN_RPAREN = ')',
-        TOKEN_LBRACE = '{',
-        TOKEN_RBRACE = '}',
-        TOKEN_END_OF_LINE = '\n',
-        // multicharacter or non-ascii tokens start above the ascii range:
-        TOKEN_IDENTIFIER = 128,
-        TOKEN_INTEGER,
-        TOKEN_RETURN,
-        TOKEN_TRUE,
-        TOKEN_FALSE,
-        TOKEN_LESS_THAN_OR_EQUAL_TO,
-        TOKEN_GREATER_THAN_OR_EQUAL_TO,
-        TOKEN_EQUAL_TO,
-        TOKEN_NOT_EQUAL_TO,
-        TOKEN_WHILE,
-        TOKEN_IF,
-        TOKEN_ELSE,
-        TOKEN_FUNCTION,
-        TOKEN_BREAK,
-        TOKEN_CONTINUE,
-    } kind;
+    enum token_kind kind;
     union {
         string identifier; // Only used for identifiers
         uint64_t integer; // Only used for integers
@@ -229,10 +230,19 @@ token_array lex_entire_file(string input) {
             case TOKEN_LPAREN: // fall through
             case TOKEN_RPAREN: // fall through
             case TOKEN_LBRACE: // fall through
-            case TOKEN_RBRACE: // fall through
-            case TOKEN_END_OF_LINE:
+            case TOKEN_RBRACE:
                 i += 1;
                 tok.kind = ch;
+                break;
+            case TOKEN_END_OF_LINE:
+                i += 1;
+                if (tokens.length <= 0 || token_array_get(&tokens, tokens.length - 1).kind == TOKEN_END_OF_LINE) {
+                    // when the beginning of a file is a newline, it doesn't
+                    // need to be stored. when the previous token was also a
+                    // newline, can bunch all subsequent newlines together.
+                    continue;
+                }
+                tok.kind = TOKEN_END_OF_LINE;
                 break;
             case '<':
                 i += 1;
