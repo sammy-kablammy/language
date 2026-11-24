@@ -16,6 +16,11 @@ void pretty_print_expression(uint32_t num_spaces, expression_node *expression) {
             compiler_printf(" %T ", expression->value.infix.operator);
             pretty_print_expression(num_spaces, expression->value.infix.right);
             break;
+        case PREFIX:
+            compiler_printf("%T(", expression->value.prefix.operator);
+            pretty_print_expression(num_spaces, expression->value.prefix.expression);
+            compiler_printf(")");
+            break;
         case INT:
             printf("%d", expression->value.integer);
             break;
@@ -41,8 +46,6 @@ void pretty_print_expression(uint32_t num_spaces, expression_node *expression) {
             pretty_print_block(num_spaces + INDENT_AMOUNT, expression->value.function_declaration.body);
             printf("}");
             break;
-        default:
-            panic("unhandled expression kind (%d) to print", expression->kind);
     }
 }
 
@@ -105,8 +108,6 @@ void pretty_print_statement(uint32_t num_spaces, statement_node *statement) {
                 printf("}");
             }
 			break;
-        default:
-            panic("unhandled statement kind (%d) to print", statement->kind);
     }
     printf("\n");
 }

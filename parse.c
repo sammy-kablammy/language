@@ -67,6 +67,11 @@ struct infix_node {
     token operator;
 };
 
+typedef struct prefix_node {
+    expression_node *expression;
+    token operator;
+} prefix_node;
+
 typedef struct declaration_node {
     string identifier;
     string data_type;
@@ -119,6 +124,7 @@ struct statement_node {
 struct expression_node {
     enum {
         INFIX,
+        PREFIX,
         INT,
         IDENTIFIER,
         BOOL,
@@ -129,6 +135,7 @@ struct expression_node {
         int integer;
         string identifier;
         infix_node infix;
+        prefix_node prefix;
         bool bool;
         function_node function_declaration;
     } value;
@@ -367,6 +374,19 @@ expression_node *parse_expression(parser_state* state, int prev_prec) {
 
 expression_node *parse_leaf(parser_state* state) {
 	expression_node *leaf = xalloc(sizeof(expression_node));
+
+    if (state->current_token.kind == TOKEN_MINUS) {
+        // whoops, not actually a leaf, this is in fact a prefix expression
+        //
+        // should rename parse_leaf to something else
+        token operator = state->current_token;
+        parser_advance(state);
+        leaf->kind = PREFIX;
+        leaf->value.prefix.expression = parse_expression(state, MIN_PREC);
+        leaf->value.prefix.operator = operator;
+        return leaf;
+    }
+
 	if (state->current_token.kind == TOKEN_INTEGER) {
 		leaf->kind = INT;
 		leaf->value.integer = state->current_token.value.integer;

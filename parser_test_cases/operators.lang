@@ -8,3 +8,4 @@ result = big > small
 result = big >= small
 result = this == that
 result = this != that
+result = -thing
