@@ -60,6 +60,7 @@ void parser_eat_newlines(parser_state *state) {
 typedef struct statement_node statement_node;
 typedef struct expression_node expression_node;
 typedef struct infix_node infix_node;
+typedef struct argument_node argument_node;
 
 struct infix_node {
     expression_node *left;
@@ -88,7 +89,15 @@ typedef struct conditional_node {
     statement_node *body;
     statement_node *alt_body; // not guaranteed to be non-null
 } conditional_node;
+
+struct argument_node {
+    string identifier;
+    string type;    
+    argument_node *next;
+};
+
 typedef struct function_node {
+    argument_node *args;
     statement_node *body;
 } function_node;
 
@@ -122,7 +131,7 @@ struct expression_node {
         INT,
         IDENTIFIER,
         BOOL,
-        INLINE_FUNCTION,
+        FUNCTION_DECLARATION,
     } kind;
 
     union {
@@ -365,6 +374,36 @@ expression_node *parse_expression(parser_state* state, int prev_prec) {
     return left;
 }
 
+argument_node *parse_arguments(parser_state* state) {
+    // arguments should be in the format:
+    // identifier colon type comma
+    if (state->current_token.kind == TOKEN_RPAREN) {
+        return NULL;
+    }
+    argument_node* arg = xalloc(sizeof(argument_node));
+    // expect identifier
+    if (state->current_token.kind != TOKEN_IDENTIFIER) {
+        parser_error(state, "Expected identifier in function argument, got %T", state->current_token);
+    }
+    arg->identifier = state->current_token.value.identifier;
+    parser_advance(state);
+    // expect colon
+    if (state->current_token.kind != TOKEN_COLON) {
+        parser_error(state, "Expected colon in function argument, got %T", state->current_token);
+    }
+    parser_advance(state);
+    // expect type
+    arg->type = state->current_token.value.identifier;
+    parser_advance(state);
+    // expect comma (assuming theres more args)
+    if (state->current_token.kind != TOKEN_COMMA) {
+        return arg;
+    }
+    parser_advance(state);
+    arg->next = parse_arguments(state);
+    return arg;
+}
+
 expression_node *parse_leaf(parser_state* state) {
 	expression_node *leaf = xalloc(sizeof(expression_node));
 	if (state->current_token.kind == TOKEN_INTEGER) {
@@ -384,7 +423,7 @@ expression_node *parse_leaf(parser_state* state) {
 		leaf->value.bool = false;
 	}
     else if (state->current_token.kind == TOKEN_FUNCTION) {
-        leaf->kind = INLINE_FUNCTION;
+        leaf->kind = FUNCTION_DECLARATION;
         parser_advance(state);
         // expect left parenthesis
         if (state->current_token.kind != TOKEN_LPAREN) {
@@ -392,6 +431,7 @@ expression_node *parse_leaf(parser_state* state) {
         }
         parser_advance(state);
         // expect arguments here
+        leaf->value.function_declaration.args = parse_arguments(state);
         // expect right parenthesis
         if (state->current_token.kind != TOKEN_RPAREN) {
             parser_error(state, "Expected ')' after function arguments");

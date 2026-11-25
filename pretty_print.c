@@ -2,6 +2,7 @@ const uint32_t INDENT_AMOUNT = 4;
 
 void pretty_print_statement(uint32_t num_spaces, statement_node *statement);
 void pretty_print_block(uint32_t num_spaces, statement_node *statement);
+void pretty_print_function_arguments(argument_node *arg);
 
 void print_spaces(uint32_t num_spaces) {
     for (uint32_t i = 0; i < num_spaces; i++) {
@@ -31,9 +32,12 @@ void pretty_print_expression(uint32_t num_spaces, expression_node *expression) {
                 panic("Somehow a bool expression got a nonboolean value");
             }
             break;
-        case INLINE_FUNCTION:
+        case FUNCTION_DECLARATION:
             printf("func(");
             // print arguments here
+            if (expression->value.function_declaration.args != NULL) {
+                pretty_print_function_arguments(expression->value.function_declaration.args);
+            }
             printf(") ");
             // print return type here
             printf("{\n");
@@ -109,6 +113,16 @@ void pretty_print_statement(uint32_t num_spaces, statement_node *statement) {
             panic("unhandled statement kind (%d) to print", statement->kind);
     }
     printf("\n");
+}
+
+void pretty_print_function_arguments(argument_node *arg) {
+    compiler_printf("%S : ", arg->identifier);
+    compiler_printf("%S", arg->type);
+    if (arg->next == NULL) {
+        return;
+    }
+    printf(", ");
+    pretty_print_function_arguments(arg->next);
 }
 
 void pretty_print_entire_file(statement_node *statement) {

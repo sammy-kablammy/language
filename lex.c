@@ -11,6 +11,7 @@ typedef struct token {
         TOKEN_STAR = '*',
         TOKEN_SLASH = '/',
         TOKEN_COLON = ':',
+        TOKEN_COMMA = ',',
         TOKEN_DOT = '.',
         TOKEN_LESS_THAN = '<',
         TOKEN_GREATER_THAN = '>',
@@ -226,6 +227,7 @@ token_array lex_entire_file(string input) {
             case TOKEN_MINUS: // fall through
             case TOKEN_COLON: // fall through
             case TOKEN_DOT: // fall through
+            case TOKEN_COMMA: // fall through
             case TOKEN_LPAREN: // fall through
             case TOKEN_RPAREN: // fall through
             case TOKEN_LBRACE: // fall through
