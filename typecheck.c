@@ -75,6 +75,22 @@ void symbol_table_insert(symbol_table *symbols, string identifier, type_info_id 
     hash_table_insert(&symbols->table, identifier, id);
 }
 
+__attribute__((noreturn)) void type_error(const char *error_message, ...) {
+    va_list args;
+    va_start(args, error_message);
+    char error_buffer[10000] = { 0 };
+    char *buf = error_buffer;
+
+    buf += compiler_sprintf(buf, "%s%serror:%s ", ANSI_RED, ANSI_BOLD, ANSI_RESET);
+    buf += compiler_vsprintf(buf, error_message, args);
+    buf += compiler_sprintf(buf, "\n");
+
+    buf += compiler_sprintf(buf, "\0");
+    compiler_fprintf(stderr, "%s", error_buffer);
+    va_end(args);
+    exit(TYPECHECK_ERROR);
+}
+
 // Primitive types are compared literally
 // Compound types are compared structurally (compatible as long as fields are compatible)
 bool are_types_compatible(typecheck_state *state, type_info_id id1, type_info_id id2) {
@@ -119,7 +135,7 @@ type_info_id typecheck_infix_expression(typecheck_state *state, infix_node infix
     type_info rhs_type = type_info_from_id(state, rhs_type_id);
 
     if (!are_types_compatible(state, lhs_type_id, rhs_type_id)) {
-        panic("type error: infix expression lhs type (%d) doesn't match rhs type (%d)", lhs_type.kind, rhs_type.kind);
+        type_error("infix expression lhs type (kind=%d) doesn't match rhs type (kind=%d)", lhs_type.kind, rhs_type.kind);
     }
     return lhs_type_id;
 }
@@ -172,8 +188,7 @@ type_info_id typecheck_expression(typecheck_state *state, expression_node *expre
             if (symbol_table_lookup(state, expression->value.identifier, &id)) {
                 return id;
             } else {
-                cprintf("Could not find type of (\"%S\") in scope\n", expression->value.identifier);
-                panic("type error");
+                type_error("Could not find type of (\"%S\") in scope", expression->value.identifier);
             }
             break;
         case INFIX:
@@ -188,17 +203,16 @@ type_info_id typecheck_expression(typecheck_state *state, expression_node *expre
 void typecheck_declaration(typecheck_state *state, declaration_node declaration) {
     type_info_id id_of_lhs_type;
     if (symbol_table_lookup(state, declaration.identifier, &id_of_lhs_type)) {
-        cfprintf(stderr, "type error: this identifier (\"%S\") has already been used.", declaration.identifier);
-        panic("type error: shadowing is not supported.");
+        type_error("attempted to re-declare identifier (\"%S\"), which has already been used. shadowing is not supported", declaration.identifier);
     }
 
     type_info_id id_of_desired_type;
     if (!symbol_table_lookup(state, declaration.data_type, &id_of_desired_type)) {
-        panic("type error: declaration used unknown type 'thing: HERE = expression'");
+        type_error("declaration used unknown type 'thing: HERE = expression'");
     }
     type_info info_of_desired_type = type_info_from_id(state, id_of_desired_type);
     if (info_of_desired_type.kind != TYPE_TYPE) {
-        panic("type error: declaration used non-type symbol 'thing: HERE = expression'");
+        type_error("declaration used non-type symbol 'thing: HERE = expression'");
     }
 
     type_info_id id_of_expression_type = typecheck_expression(state, declaration.expression);
@@ -207,7 +221,7 @@ void typecheck_declaration(typecheck_state *state, declaration_node declaration)
     type_info desired_type = type_info_from_id(state, info_of_desired_type.value.underlying_type);
     if (desired_type.kind == TYPE_TYPE) {
         if (expression_type.kind != TYPE_TYPE) {
-            panic("type error: expected rhs of to be a type expression");
+            type_error("expected rhs of to be a type expression");
         }
 
         type_info_id new_type_id = type_info_alloc(state, (type_info){
@@ -218,8 +232,8 @@ void typecheck_declaration(typecheck_state *state, declaration_node declaration)
         return;
     } else {
         if (!are_types_compatible(state, info_of_desired_type.value.underlying_type, id_of_expression_type)) {
-            panic(
-                "type error: desired type (id=%d kind=%d) does not match expression type (id=%d kind=%d)",
+            type_error(
+                "desired type (id=%d kind=%d) does not match expression type (id=%d kind=%d)",
                 info_of_desired_type.value.underlying_type,
                 desired_type.kind,
                 id_of_expression_type,
@@ -234,8 +248,7 @@ void typecheck_assignment(typecheck_state *state, assignment_node assignment) {
 
     type_info_id lhs_type_id;
     if (!symbol_table_lookup(state, assignment.lhs, &lhs_type_id)) {
-        cprintf("\ntype error: lhs of identifier (\"%S\") not found in current or parent scope\n", assignment.lhs);
-        panic("type error");
+        type_error("lhs of identifier (\"%S\") not found in current or parent scope\n", assignment.lhs);
     }
     type_info lhs_type = type_info_from_id(state, lhs_type_id);
 
@@ -243,7 +256,7 @@ void typecheck_assignment(typecheck_state *state, assignment_node assignment) {
     type_info rhs_type = type_info_from_id(state, rhs_type_id);
 
     if (!are_types_compatible(state, lhs_type_id, rhs_type_id)) {
-        panic("type error: Assignment's RHS type (%d) does not match LHS type (%d)", rhs_type.kind, lhs_type.kind);
+        type_error("Assignment's RHS type (%d) does not match LHS type (%d)", rhs_type.kind, lhs_type.kind);
     }
 
 }

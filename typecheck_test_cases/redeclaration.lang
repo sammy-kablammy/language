@@ -1,0 +1,4 @@
+main = func() {
+    x: int = 100
+    x: int = 200
+}
