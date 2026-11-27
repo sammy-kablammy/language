@@ -38,7 +38,7 @@ language features to parse:
   - [X] dot operator
 - [ ] unary operators
   - [ ] logical `!`
-  - [ ] negation `-`
+  - [X] negation `-`
 - [X] comments
 - [X] break / continue keywords
 - [ ] import keyword like `import "filename"`
